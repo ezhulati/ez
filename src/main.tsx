@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import './index.css';
+import { HelmetProvider } from 'react-helmet-async';
 
 // Lazy load the App component for better performance
 const App = lazy(() => import('./App'));
@@ -22,11 +23,13 @@ document.documentElement.classList.add('dark');
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Router>
-      <AppProvider>
-        <Suspense fallback={<LoadingFallback />}>
-          <App />
-        </Suspense>
-      </AppProvider>
+      <HelmetProvider>
+        <AppProvider>
+          <Suspense fallback={<LoadingFallback />}>
+            <App />
+          </Suspense>
+        </AppProvider>
+      </HelmetProvider>
     </Router>
   </StrictMode>
 );

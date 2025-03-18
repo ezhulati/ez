@@ -13,9 +13,11 @@ import {
   BlogPost as BlogPostType, 
   isPreviewModeActive 
 } from '../../services/contentful';
+import { getPostSeoFields } from '../../services/contentfulSeo';
 import { useAppContext } from '../../context/AppContext';
 import AnimatedSection from '../AnimatedSection';
 import PageTransition from '../PageTransition';
+import BlogSeo from '../BlogSeo';
 
 // Configure Contentful Rich Text options
 const richTextOptions = (isDark: boolean) => ({
@@ -77,6 +79,7 @@ const BlogPost = () => {
   const [missingEnvVars, setMissingEnvVars] = useState(false);
   const [useAlternateRendering, setUseAlternateRendering] = useState(false);
   const [rawHtml, setRawHtml] = useState<string>('');
+  const [seoData, setSeoData] = useState<any>(null);
   const { isDarkMode } = useAppContext();
   const isPreview = isPreviewModeActive();
   
@@ -156,6 +159,11 @@ const BlogPost = () => {
             bodyType: typeof fetchedPost.fields.body,
             hasBody: !!fetchedPost.fields.body
           });
+          
+          // Fetch SEO data
+          const seo = await getPostSeoFields(slug || '');
+          setSeoData(seo);
+          console.log('SEO DATA LOADED:', seo);
           
           // Create raw HTML version for direct rendering fallback
           if (typeof fetchedPost.fields.body === 'string') {
@@ -396,6 +404,9 @@ const BlogPost = () => {
   
   return (
     <PageTransition>
+      {/* Add SEO metadata */}
+      {seoData && <BlogSeo seoData={seoData} />}
+      
       <article className="max-w-4xl mx-auto px-4 py-12 pt-16 lg:pt-28">
         {/* Back link with improved styling */}
         <div className="mb-10">
