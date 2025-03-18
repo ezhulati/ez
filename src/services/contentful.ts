@@ -44,6 +44,14 @@ export type BlogPost = {
   };
 };
 
+// Log environment variables without exposing sensitive data
+console.log('Contentful Config:', {
+  spaceId: import.meta.env.VITE_CONTENTFUL_SPACE_ID ? 'Set' : 'Not set',
+  accessToken: import.meta.env.VITE_CONTENTFUL_ACCESS_TOKEN ? 'Set' : 'Not set',
+  previewToken: import.meta.env.VITE_CONTENTFUL_PREVIEW_TOKEN ? 'Set' : 'Not set',
+  environment: import.meta.env.VITE_CONTENTFUL_ENVIRONMENT || 'master',
+});
+
 // Create a standard delivery client
 const client = createClient({
   space: import.meta.env.VITE_CONTENTFUL_SPACE_ID as string,
@@ -63,6 +71,7 @@ const previewClient = createClient({
 const usePreviewMode = (): boolean => {
   // Check for preview mode in query params or localStorage
   const isPreview = localStorage.getItem('contentful-preview-mode') === 'true';
+  console.log('Preview mode:', isPreview);
   return isPreview;
 };
 
@@ -76,15 +85,35 @@ const getClient = () => {
  */
 export const getBlogPosts = async (limit?: number): Promise<BlogPost[]> => {
   try {
-    const response = await getClient().getEntries({
-      content_type: 'blogPage',
-      order: '-sys.createdAt',
-      limit: limit || 100,
-    });
-
-    return response.items as unknown as BlogPost[];
+    // First try with blogPage content type
+    try {
+      const response = await getClient().getEntries({
+        content_type: 'blogPage',
+        order: '-sys.createdAt',
+        limit: limit || 100,
+      });
+      console.log('Blog posts found (blogPage):', response.items.length);
+      return response.items as unknown as BlogPost[];
+    } catch (error) {
+      console.error('Error with blogPage type, trying blogPost:', error);
+      // If that fails, try with blogPost content type
+      const response = await getClient().getEntries({
+        content_type: 'blogPost',
+        order: '-sys.createdAt',
+        limit: limit || 100,
+      });
+      console.log('Blog posts found (blogPost):', response.items.length);
+      return response.items as unknown as BlogPost[];
+    }
   } catch (error) {
     console.error('Error fetching blog posts from Contentful:', error);
+    // Log all available content types to help debugging
+    try {
+      const contentTypes = await getClient().getContentTypes();
+      console.log('Available content types:', contentTypes.items.map(item => item.sys.id));
+    } catch (e) {
+      console.error('Failed to fetch content types:', e);
+    }
     return [];
   }
 };
@@ -94,17 +123,37 @@ export const getBlogPosts = async (limit?: number): Promise<BlogPost[]> => {
  */
 export const getBlogPostBySlug = async (slug: string): Promise<BlogPost | null> => {
   try {
-    const response = await getClient().getEntries({
-      content_type: 'blogPage',
-      'fields.slug': slug,
-      limit: 1,
-    });
-
-    if (response.items.length === 0) {
-      return null;
+    // First try with blogPage
+    try {
+      const response = await getClient().getEntries({
+        content_type: 'blogPage',
+        'fields.slug': slug,
+        limit: 1,
+      });
+      
+      if (response.items.length > 0) {
+        console.log('Blog post found (blogPage):', response.items[0].sys.id);
+        return response.items[0] as unknown as BlogPost;
+      }
+      
+      throw new Error('Not found with blogPage type');
+    } catch (error) {
+      console.log('Trying with blogPost type');
+      // If that fails, try with blogPost
+      const response = await getClient().getEntries({
+        content_type: 'blogPost',
+        'fields.slug': slug,
+        limit: 1,
+      });
+      
+      if (response.items.length === 0) {
+        console.log('Blog post not found with either type');
+        return null;
+      }
+      
+      console.log('Blog post found (blogPost):', response.items[0].sys.id);
+      return response.items[0] as unknown as BlogPost;
     }
-
-    return response.items[0] as unknown as BlogPost;
   } catch (error) {
     console.error(`Error fetching blog post with slug ${slug}:`, error);
     return null;
@@ -116,13 +165,32 @@ export const getBlogPostBySlug = async (slug: string): Promise<BlogPost | null> 
  */
 export const getBlogPostsByCategory = async (category: string): Promise<BlogPost[]> => {
   try {
-    const response = await getClient().getEntries({
-      content_type: 'blogPage',
-      'fields.categories[in]': category,
-      order: '-sys.createdAt',
-    });
-
-    return response.items as unknown as BlogPost[];
+    // Try both content types
+    let posts: BlogPost[] = [];
+    
+    try {
+      const response = await getClient().getEntries({
+        content_type: 'blogPage',
+        'fields.categories[in]': category,
+        order: '-sys.createdAt',
+      });
+      posts = [...posts, ...(response.items as unknown as BlogPost[])];
+    } catch (e) {
+      console.log('Error with blogPage type for category:', e);
+    }
+    
+    try {
+      const response = await getClient().getEntries({
+        content_type: 'blogPost',
+        'fields.categories[in]': category,
+        order: '-sys.createdAt',
+      });
+      posts = [...posts, ...(response.items as unknown as BlogPost[])];
+    } catch (e) {
+      console.log('Error with blogPost type for category:', e);
+    }
+    
+    return posts;
   } catch (error) {
     console.error(`Error fetching blog posts with category ${category}:`, error);
     return [];
