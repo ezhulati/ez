@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Calendar, Clock, ArrowLeft, User, Tag, Share2, Bookmark, BookmarkCheck, AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { 
   getBlogPostBySlug, 
   getBlogPostById,
@@ -119,6 +121,7 @@ const BlogPost = () => {
   const [error, setError] = useState<string | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [missingEnvVars, setMissingEnvVars] = useState(false);
+  const [useAlternateRendering, setUseAlternateRendering] = useState(false);
   const { isDarkMode } = useAppContext();
   const isPreview = isPreviewModeActive();
   
@@ -235,6 +238,20 @@ const BlogPost = () => {
     console.log('No content found in post body');
     return 'No content available for this post.';
   };
+  
+  // Check if primary rendering method is empty after mount
+  useEffect(() => {
+    if (!isLoading && post) {
+      setTimeout(() => {
+        const proseElement = document.querySelector('.prose');
+        const isEmpty = proseElement && proseElement.innerHTML.trim().length === 0;
+        if (isEmpty && getContentMarkdown().trim().length > 0) {
+          console.log('Primary rendering produced empty result, using alternative rendering');
+          setUseAlternateRendering(true);
+        }
+      }, 500); // Give React time to render
+    }
+  }, [isLoading, post]);
   
   if (missingEnvVars) {
     return (
@@ -447,13 +464,29 @@ const BlogPost = () => {
           </div>
           
           {/* Main content */}
-          <div className={`prose max-w-none ${
+          <div className={`prose prose-lg max-w-none my-8 p-8 border border-gray-100 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-900 shadow-sm ${
             isDarkMode ? 'prose-invert' : ''
           } prose-headings:font-bold prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-img:rounded-xl prose-img:shadow-md`}>
-            <ReactMarkdown>
+            {/* Primary rendering method: ReactMarkdown with plugins */}
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
+            >
               {getContentMarkdown()}
             </ReactMarkdown>
           </div>
+          
+          {/* Fallback rendering if ReactMarkdown produces empty results */}
+          {useAlternateRendering && (
+            <div className="mt-8">
+              <h3 className="text-lg font-medium mb-2">Alternative Rendering</h3>
+              {/* Direct HTML approach */}
+              <div 
+                className="prose prose-lg max-w-none p-6 border border-blue-100 dark:border-blue-900 rounded-lg bg-white dark:bg-gray-900"
+                dangerouslySetInnerHTML={{ __html: getContentMarkdown() }} 
+              />
+            </div>
+          )}
           
           {/* Show raw content if markdown is empty */}
           {getContentMarkdown().trim().length === 0 && (
