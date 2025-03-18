@@ -15,6 +15,7 @@ export const getPostSeoFields = async (slug: string) => {
     // Basic SEO
     title: post.fields.title || '',
     description: post.fields.excerpt || '',
+    excerpt: post.fields.excerpt || '',
     keywords: post.fields.categories?.join(', ') || '',
     canonicalUrl: `${window.location.origin}/blog/${post.fields.slug || ''}`,
     
