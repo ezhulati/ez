@@ -1,0 +1,264 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom CSS for smooth scrolling - disable on mobile for better performance */
+@media (min-width: 768px) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Custom focus outline for accessibility */
+*:focus-visible {
+  @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-white dark:ring-offset-gray-900 rounded-sm;
+}
+
+/* Base styling */
+@layer base {
+  body {
+    @apply antialiased overscroll-none;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
+  }
+}
+
+/* Reduce motion for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .animate-pulse {
+    animation: none !important;
+  }
+}
+
+/* Ensure z-indices work properly */
+.z-\[9900\] { z-index: 9900 !important; }
+.z-\[9910\] { z-index: 9910 !important; }
+.z-\[9920\] { z-index: 9920 !important; }
+.z-\[9950\] { z-index: 9950 !important; }
+.z-\[9999\] { z-index: 9999 !important; }
+
+/* Mobile specific optimizations */
+@media (max-width: 767px) {
+  /* Completely disable animations that cause flicker */
+  .transition-all, 
+  .transition-colors,
+  .transition-opacity,
+  .transition-transform,
+  .transition-shadow,
+  .hover\:transform,
+  .group-hover\:transform,
+  .hover\:scale,
+  .group-hover\:scale,
+  .hover\:translate,
+  .group-hover\:translate {
+    transition: none !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+  
+  /* Disable animations completely */
+  .animate-pulse,
+  .animate-spin,
+  .animate-ping,
+  .animate-bounce {
+    animation: none !important;
+  }
+  
+  /* Disable background animations */
+  .bg-gradient-animate {
+    animation: none !important;
+    background-position: 0% 0% !important;
+  }
+  
+  /* Reduce blur intensity on mobile */
+  .blur-xl, .blur-2xl, .blur-3xl {
+    filter: blur(3px) !important;
+  }
+  
+  /* Simplify mobile menu slide transition */
+  .mobile-menu-slide {
+    transition: none !important;
+  }
+}
+
+/* Performance optimization for animations */
+.transform-gpu {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Apply hardware acceleration to animated elements */
+.framer-motion-gpu {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Timeline optimizations */
+.timeline-container {
+  position: relative;
+  contain: content;
+}
+
+/* Custom styles for day picker */
+.rdp {
+  margin: 0;
+}
+
+.rdp-month {
+  background-color: white;
+}
+
+.dark .rdp-month {
+  background-color: #1f2937;
+}
+
+.rdp-day_selected, 
+.rdp-day_selected:focus-visible, 
+.rdp-day_selected:hover {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.rdp-day_disabled {
+  opacity: 0.25;
+}
+
+.rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.dark .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+.dark .rdp-day {
+  color: #e5e7eb;
+}
+
+.dark .rdp-day_disabled {
+  color: #6b7280;
+}
+
+.dark .rdp-head_cell {
+  color: #9ca3af;
+}
+
+/* LinkedIn Badge Styling */
+.LI-profile-badge {
+  width: 100% !important;
+  max-width: 450px !important;
+  margin: 0 auto !important;
+}
+
+.LI-badge-container {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.LI-badge-container .LI-profile-pic {
+  max-width: 100px !important;
+  height: auto !important;
+}
+
+/* Animated background gradient */
+@keyframes gradientAnimation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.bg-gradient-animate {
+  background-size: 200% 200%;
+  animation: gradientAnimation 15s ease infinite;
+}
+
+/* Disable background animation on mobile */
+@media (max-width: 767px) {
+  .bg-gradient-animate {
+    animation: none !important;
+    background-position: 0% 0% !important;
+    background-size: 100% 100% !important;
+  }
+}
+
+/* Glow effect */
+.glow-effect {
+  position: relative;
+}
+
+.glow-effect::after {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
+  z-index: -1;
+  background: linear-gradient(45deg, #4f46e5, #2563eb, #06b6d4);
+  filter: blur(15px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: inherit;
+}
+
+.glow-effect:hover::after {
+  opacity: 0.6;
+}
+
+/* Custom utility classes */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}
+
+/* Custom component classes */
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-white;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200;
+  }
+  
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-soft border border-gray-100 dark:border-gray-700 overflow-hidden;
+  }
+  
+  .input {
+    @apply w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent;
+  }
+  
+  .container-custom {
+    @apply max-w-5xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .section {
+    @apply py-12 sm:py-16;
+  }
+}

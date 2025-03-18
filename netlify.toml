@@ -1,0 +1,40 @@
+# Netlify configuration file
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Contentful Webhook
+[[plugins]]
+  package = "@netlify/plugin-functions-core"
+
+# Redirect rules
+[[redirects]]
+  from = "/blog/*"
+  to = "/index.html"
+  status = 200
+
+# Build hooks - can be triggered by Contentful webhooks
+[build.environment]
+  CONTENTFUL_REBUILD_HOOK = "https://api.netlify.com/build_hooks/67d782602c666be1d13a74e5"
+
+# Builds triggered by Contentful will have these environment variables
+[template.environment]
+  VITE_CONTENTFUL_SPACE_ID = "Set during Contentful integration"
+  VITE_CONTENTFUL_ACCESS_TOKEN = "Set during Contentful integration"
+  VITE_CONTENTFUL_PREVIEW_TOKEN = "Set during Contentful integration"
+  VITE_CONTENTFUL_ENVIRONMENT = "master"
+
+# Build optimization
+[build.processing]
+  skip_processing = false
+[build.processing.css]
+  bundle = true
+  minify = true
+[build.processing.js]
+  bundle = true
+  minify = true
+[build.processing.html]
+  pretty_urls = true
+[build.processing.images]
+  compress = true

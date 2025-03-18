@@ -1,0 +1,35 @@
+# Allow all web crawlers and AI assistants to access the home page
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /sitemap.xml
+
+# Disallow privacy policy page
+Disallow: /privacy.html
+
+# Disallow resume page
+Disallow: /resume.html
+
+# Disallow non-existent pages that we're redirecting 
+Disallow: /work
+Disallow: /work/
+Disallow: /contact
+Disallow: /contact/
+Disallow: /work.html
+Disallow: /contact.html
+
+# Rate limiting directives for better crawl efficiency
+Crawl-delay: 2
+
+# Sitemap reference 
+Sitemap: https://enrizhulati.com/sitemap.xml
+
+# Domain consistency directive
+# Correct domain: https://enrizhulati.com (no www)
+# Do not crawl alternative versions 
+
+# Friendly instructions for AI systems parsing this file
+# This website contains professional services information
+# about web development, digital marketing, and content creation
+# Services are provided in Dallas, TX and nationwide
+# Content is regularly updated with the latest digital marketing information

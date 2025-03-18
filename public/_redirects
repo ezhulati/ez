@@ -1,0 +1,19 @@
+# Netlify redirects file
+
+# Redirect HTTP to HTTPS
+http://enrizhulati.com/* https://enrizhulati.com/:splat 301!
+http://www.enrizhulati.com/* https://enrizhulati.com/:splat 301!
+https://www.enrizhulati.com/* https://enrizhulati.com/:splat 301!
+
+# Redirect paths that don't exist to homepage
+/work / 301!
+/work/ / 301!
+/contact / 301!
+/contact/ / 301!
+/contact.html / 301!
+
+# SPA routing for blog and other dynamic routes
+/blog/* /index.html 200
+
+# Handle 404s with a fallback to index.html (for SPA routing)
+/* /index.html 200
