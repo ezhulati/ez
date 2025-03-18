@@ -16,6 +16,7 @@ import PageTransition from '../PageTransition';
 // Function to convert Contentful RichText to Markdown (or extract plain text)
 const richTextToMarkdown = (richText: any): string => {
   if (!richText || typeof richText !== 'object') {
+    console.log('RichText is not an object:', richText);
     return '';
   }
 
@@ -102,6 +103,7 @@ const richTextToMarkdown = (richText: any): string => {
     }
     
     // Fallback for unsupported types
+    console.log('Unsupported node type:', richText.nodeType);
     return '';
     
   } catch (error) {
@@ -206,17 +208,32 @@ const BlogPost = () => {
   const getContentMarkdown = () => {
     if (!post) return '';
     
+    console.log('Post body type:', typeof post.fields.body);
+    console.log('Post body structure:', post.fields.body);
+    
     // If body is a string, assume it's already markdown
     if (typeof post.fields.body === 'string') {
+      console.log('Using string content');
       return post.fields.body;
     }
     
     // If body is RichText object, convert to markdown
     if (post.fields.body && typeof post.fields.body === 'object') {
-      return richTextToMarkdown(post.fields.body);
+      try {
+        console.log('Converting RichText to markdown');
+        const markdown = richTextToMarkdown(post.fields.body);
+        console.log('Markdown conversion result length:', markdown.length);
+        console.log('First 100 chars:', markdown.substring(0, 100));
+        return markdown;
+      } catch (err) {
+        console.error('Failed to convert RichText to markdown:', err);
+        // Fallback to showing error with stringified content for debugging
+        return `Error rendering content. Please check Contentful setup.\n\n\`\`\`json\n${JSON.stringify(post.fields.body, null, 2)}\n\`\`\``;
+      }
     }
     
-    return '';
+    console.log('No content found in post body');
+    return 'No content available for this post.';
   };
   
   if (missingEnvVars) {
@@ -432,11 +449,24 @@ const BlogPost = () => {
           {/* Main content */}
           <div className={`prose max-w-none ${
             isDarkMode ? 'prose-invert' : ''
-          } prose-headings:font-bold prose-a:text-blue-600 dark:prose-a:text-blue-400`}>
+          } prose-headings:font-bold prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-img:rounded-xl prose-img:shadow-md`}>
             <ReactMarkdown>
               {getContentMarkdown()}
             </ReactMarkdown>
           </div>
+          
+          {/* Show raw content if markdown is empty */}
+          {getContentMarkdown().trim().length === 0 && (
+            <div className="mt-8 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
+              <h3 className="text-lg font-medium mb-2">Debug Information - Raw Content</h3>
+              <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                The markdown conversion produced no content. Here's the raw content from Contentful:
+              </p>
+              <pre className="whitespace-pre-wrap text-xs bg-white dark:bg-gray-900 p-4 rounded border dark:border-gray-700 overflow-auto max-h-[400px]">
+                {JSON.stringify(post.fields.body, null, 2)}
+              </pre>
+            </div>
+          )}
         </AnimatedSection>
         
         {/* Recommended posts if available */}
