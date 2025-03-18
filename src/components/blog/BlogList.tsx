@@ -197,8 +197,8 @@ const BlogPostCard = ({ post, index }: BlogPostCardProps) => {
   
   // Get image URL or use a placeholder
   const imageUrl = post.fields.image?.fields?.file?.url 
-    ? `https:${post.fields.image.fields.file.url}`
-    : `https://images.unsplash.com/photo-${1500000000000 + index}`;
+    ? `https:${post.fields.image.fields.file.url}?fm=webp&w=600&h=400&fit=fill` 
+    : `https://images.unsplash.com/photo-${1500000000000 + index}?fm=webp&w=600&h=400&fit=fill`;
   
   // Estimate reading time
   const content = post.fields.body || '';
@@ -219,6 +219,8 @@ const BlogPostCard = ({ post, index }: BlogPostCardProps) => {
             alt={post.fields.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
+            width="600"
+            height="400"
           />
           {post.fields.categories && post.fields.categories.length > 0 && (
             <div className="absolute top-3 left-3">

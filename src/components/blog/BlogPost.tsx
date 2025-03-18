@@ -156,8 +156,8 @@ const BlogPost = () => {
   
   // Get image URL or use a placeholder
   const featuredImageUrl = post.fields.image?.fields?.file?.url 
-    ? `https:${post.fields.image.fields.file.url}`
-    : 'https://images.unsplash.com/photo-1519681393784-d120267933ba';
+    ? `https:${post.fields.image.fields.file.url}?fm=webp&w=1200&h=600&fit=fill`
+    : 'https://images.unsplash.com/photo-1519681393784-d120267933ba?fm=webp&w=1200&h=600&fit=fill';
   
   // Determine reading time (rough estimate based on word count)
   const content = post.fields.body || '';
@@ -266,6 +266,9 @@ const BlogPost = () => {
               src={featuredImageUrl}
               alt={post.fields.title}
               className="w-full h-auto max-h-[500px] object-cover"
+              loading="lazy"
+              width="1200"
+              height="600"
             />
           </div>
           
