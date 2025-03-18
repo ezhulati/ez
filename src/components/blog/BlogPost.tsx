@@ -396,7 +396,7 @@ const BlogPost = () => {
   
   return (
     <PageTransition>
-      <article className="max-w-4xl mx-auto px-4 py-12">
+      <article className="max-w-4xl mx-auto px-4 py-12 pt-16 lg:pt-28">
         {/* Back link with improved styling */}
         <div className="mb-10">
           <Link 
