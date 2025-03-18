@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@contentful/rich-text-react-renderer": "^16.0.1",
+    "@contentful/rich-text-types": "^17.0.0",
     "@supabase/supabase-js": "^2.39.7",
     "contentful": "^10.6.19",
     "date-fns": "^3.3.1",

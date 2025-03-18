@@ -5,6 +5,8 @@ import { Calendar, Clock, ArrowLeft, User, Tag, Share2, Bookmark, BookmarkCheck,
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import { documentToReactComponents } from '@contentful/rich-text-react-renderer';
+import { BLOCKS, INLINES, MARKS } from '@contentful/rich-text-types';
 import { 
   getBlogPostBySlug, 
   getBlogPostById,
@@ -15,104 +17,56 @@ import { useAppContext } from '../../context/AppContext';
 import AnimatedSection from '../AnimatedSection';
 import PageTransition from '../PageTransition';
 
-// Function to convert Contentful RichText to Markdown (or extract plain text)
-const richTextToMarkdown = (richText: any): string => {
-  if (!richText || typeof richText !== 'object') {
-    console.log('RichText is not an object:', richText);
-    return '';
-  }
-
-  try {
-    // If it's a node with content
-    if (richText.nodeType && richText.content) {
-      // Process different node types
-      if (richText.nodeType === 'document') {
-        return richText.content.map((node: any) => richTextToMarkdown(node)).join('\n\n');
+// Configure Contentful Rich Text options
+const richTextOptions = (isDark: boolean) => ({
+  renderMark: {
+    [MARKS.BOLD]: (text: React.ReactNode) => <strong>{text}</strong>,
+    [MARKS.ITALIC]: (text: React.ReactNode) => <em>{text}</em>,
+    [MARKS.UNDERLINE]: (text: React.ReactNode) => <u>{text}</u>,
+    [MARKS.CODE]: (text: React.ReactNode) => <code className="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono text-sm">{text}</code>,
+  },
+  renderNode: {
+    [BLOCKS.PARAGRAPH]: (node: any, children: React.ReactNode) => <p className="mb-4">{children}</p>,
+    [BLOCKS.HEADING_1]: (node: any, children: React.ReactNode) => <h1 className="text-3xl font-bold mb-4 mt-8">{children}</h1>,
+    [BLOCKS.HEADING_2]: (node: any, children: React.ReactNode) => <h2 className="text-2xl font-bold mb-3 mt-6">{children}</h2>,
+    [BLOCKS.HEADING_3]: (node: any, children: React.ReactNode) => <h3 className="text-xl font-bold mb-3 mt-5">{children}</h3>,
+    [BLOCKS.HEADING_4]: (node: any, children: React.ReactNode) => <h4 className="text-lg font-bold mb-2 mt-4">{children}</h4>,
+    [BLOCKS.HEADING_5]: (node: any, children: React.ReactNode) => <h5 className="text-md font-bold mb-2 mt-4">{children}</h5>,
+    [BLOCKS.HEADING_6]: (node: any, children: React.ReactNode) => <h6 className="text-sm font-bold mb-2 mt-4">{children}</h6>,
+    [BLOCKS.UL_LIST]: (node: any, children: React.ReactNode) => <ul className="list-disc pl-5 mb-4">{children}</ul>,
+    [BLOCKS.OL_LIST]: (node: any, children: React.ReactNode) => <ol className="list-decimal pl-5 mb-4">{children}</ol>,
+    [BLOCKS.LIST_ITEM]: (node: any, children: React.ReactNode) => <li className="mb-1">{children}</li>,
+    [BLOCKS.QUOTE]: (node: any, children: React.ReactNode) => (
+      <blockquote className={`border-l-4 ${isDark ? 'border-blue-600 bg-gray-800' : 'border-blue-500 bg-gray-50'} pl-4 py-2 mb-4 italic`}>
+        {children}
+      </blockquote>
+    ),
+    [BLOCKS.HR]: () => <hr className="my-6 border-gray-300 dark:border-gray-700" />,
+    [BLOCKS.EMBEDDED_ASSET]: (node: any) => {
+      const { data: { target: { fields } } } = node;
+      if (fields?.file?.url) {
+        return (
+          <img
+            src={`https:${fields.file.url}`}
+            alt={fields.title || 'Embedded asset'}
+            className="my-4 rounded-lg shadow-md max-h-96 mx-auto"
+          />
+        );
       }
-
-      if (richText.nodeType === 'paragraph') {
-        return richText.content.map((node: any) => richTextToMarkdown(node)).join('');
-      }
-
-      if (richText.nodeType === 'heading-1') {
-        return '# ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n\n';
-      }
-
-      if (richText.nodeType === 'heading-2') {
-        return '## ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n\n';
-      }
-
-      if (richText.nodeType === 'heading-3') {
-        return '### ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n\n';
-      }
-
-      if (richText.nodeType === 'heading-4') {
-        return '#### ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n\n';
-      }
-
-      if (richText.nodeType === 'heading-5') {
-        return '##### ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n\n';
-      }
-
-      if (richText.nodeType === 'heading-6') {
-        return '###### ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n\n';
-      }
-
-      if (richText.nodeType === 'unordered-list') {
-        return richText.content.map((node: any) => richTextToMarkdown(node)).join('\n') + '\n\n';
-      }
-
-      if (richText.nodeType === 'ordered-list') {
-        return richText.content.map((node: any, index: number) => {
-          // Prepend with index + 1 and period for ordered list
-          const listItem = richTextToMarkdown(node);
-          return `${index + 1}. ${listItem.trim()}`;
-        }).join('\n') + '\n\n';
-      }
-
-      if (richText.nodeType === 'list-item') {
-        return '- ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n';
-      }
-
-      if (richText.nodeType === 'blockquote') {
-        return '> ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n\n';
-      }
-
-      if (richText.nodeType === 'hr') {
-        return '---\n\n';
-      }
-
-      if (richText.nodeType === 'text') {
-        let text = richText.value || '';
-        
-        // Apply marks
-        if (richText.marks && richText.marks.length > 0) {
-          richText.marks.forEach((mark: any) => {
-            if (mark.type === 'bold') {
-              text = `**${text}**`;
-            } else if (mark.type === 'italic') {
-              text = `*${text}*`;
-            } else if (mark.type === 'underline') {
-              text = `<u>${text}</u>`;
-            } else if (mark.type === 'code') {
-              text = `\`${text}\``;
-            }
-          });
-        }
-        
-        return text;
-      }
-    }
-    
-    // Fallback for unsupported types
-    console.log('Unsupported node type:', richText.nodeType);
-    return '';
-    
-  } catch (error) {
-    console.error('Error parsing RichText:', error);
-    return '';
-  }
-};
+      return null;
+    },
+    [INLINES.HYPERLINK]: (node: any, children: React.ReactNode) => (
+      <a 
+        href={node.data.uri} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className={`${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'} underline`}
+      >
+        {children}
+      </a>
+    ),
+  },
+});
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -207,36 +161,59 @@ const BlogPost = () => {
     }
   };
   
-  // Get content as markdown
-  const getContentMarkdown = () => {
-    if (!post) return '';
-    
-    console.log('Post body type:', typeof post.fields.body);
-    console.log('Post body structure:', post.fields.body);
-    
-    // If body is a string, assume it's already markdown
-    if (typeof post.fields.body === 'string') {
-      console.log('Using string content');
-      return post.fields.body;
+  // Render content using the appropriate method based on the content type
+  const renderContent = () => {
+    if (!post || !post.fields.body) {
+      console.log('No post or post body found');
+      return <p className="text-red-500">No content available.</p>;
     }
     
-    // If body is RichText object, convert to markdown
-    if (post.fields.body && typeof post.fields.body === 'object') {
+    console.log('Post body type:', typeof post.fields.body);
+    
+    // If body is a string (markdown or HTML), use ReactMarkdown
+    if (typeof post.fields.body === 'string') {
+      console.log('Rendering string content with ReactMarkdown');
+      return (
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeRaw]}
+        >
+          {post.fields.body}
+        </ReactMarkdown>
+      );
+    }
+    
+    // If body is a Contentful Rich Text object, use the contentful renderer
+    if (typeof post.fields.body === 'object') {
       try {
-        console.log('Converting RichText to markdown');
-        const markdown = richTextToMarkdown(post.fields.body);
-        console.log('Markdown conversion result length:', markdown.length);
-        console.log('First 100 chars:', markdown.substring(0, 100));
-        return markdown;
+        console.log('Rendering Rich Text content with Contentful renderer');
+        return documentToReactComponents(post.fields.body, richTextOptions(isDarkMode));
       } catch (err) {
-        console.error('Failed to convert RichText to markdown:', err);
-        // Fallback to showing error with stringified content for debugging
-        return `Error rendering content. Please check Contentful setup.\n\n\`\`\`json\n${JSON.stringify(post.fields.body, null, 2)}\n\`\`\``;
+        console.error('Error rendering Rich Text:', err);
+        return (
+          <div className="p-4 border border-red-300 rounded bg-red-50 dark:bg-red-900/20 dark:border-red-900 text-red-800 dark:text-red-300">
+            <h3 className="font-bold mb-2">Error rendering content</h3>
+            <p>There was an error rendering the content from Contentful. Please check your content structure.</p>
+            <pre className="mt-4 text-xs bg-white dark:bg-gray-900 p-3 rounded overflow-auto max-h-[200px]">
+              {JSON.stringify(post.fields.body, null, 2)}
+            </pre>
+          </div>
+        );
       }
     }
     
-    console.log('No content found in post body');
-    return 'No content available for this post.';
+    // If we can't determine how to render the content
+    return (
+      <div className="p-4 border border-yellow-300 rounded bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-900">
+        <h3 className="font-bold text-yellow-800 dark:text-yellow-300 mb-2">Unknown content format</h3>
+        <p className="text-yellow-700 dark:text-yellow-400">
+          The content format is not recognized. Here's the raw content:
+        </p>
+        <pre className="mt-4 text-xs bg-white dark:bg-gray-900 p-3 rounded overflow-auto max-h-[200px]">
+          {JSON.stringify(post.fields.body, null, 2)}
+        </pre>
+      </div>
+    );
   };
   
   // Check if primary rendering method is empty after mount
@@ -245,7 +222,9 @@ const BlogPost = () => {
       setTimeout(() => {
         const proseElement = document.querySelector('.prose');
         const isEmpty = proseElement && proseElement.innerHTML.trim().length === 0;
-        if (isEmpty && getContentMarkdown().trim().length > 0) {
+        
+        // Check if content exists but isn't rendering properly
+        if (isEmpty && post.fields.body) {
           console.log('Primary rendering produced empty result, using alternative rendering');
           setUseAlternateRendering(true);
         }
@@ -464,42 +443,34 @@ const BlogPost = () => {
           </div>
           
           {/* Main content */}
-          <div className={`prose prose-lg max-w-none my-8 p-8 border border-gray-100 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-900 shadow-sm ${
-            isDarkMode ? 'prose-invert' : ''
-          } prose-headings:font-bold prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-img:rounded-xl prose-img:shadow-md`}>
-            {/* Primary rendering method: ReactMarkdown with plugins */}
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw]}
-            >
-              {getContentMarkdown()}
-            </ReactMarkdown>
+          <div className={`my-8 p-8 border border-gray-100 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-900 shadow-sm ${
+            isDarkMode ? 'text-gray-200' : 'text-gray-800'
+          }`}>
+            {renderContent()}
           </div>
           
-          {/* Fallback rendering if ReactMarkdown produces empty results */}
-          {useAlternateRendering && (
-            <div className="mt-8">
-              <h3 className="text-lg font-medium mb-2">Alternative Rendering</h3>
-              {/* Direct HTML approach */}
-              <div 
-                className="prose prose-lg max-w-none p-6 border border-blue-100 dark:border-blue-900 rounded-lg bg-white dark:bg-gray-900"
-                dangerouslySetInnerHTML={{ __html: getContentMarkdown() }} 
-              />
+          {/* Additional debug information - always show for now until we fix the issue */}
+          <div className="mt-8 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
+            <h3 className="text-lg font-medium mb-2">Debug Information</h3>
+            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+              This information can help diagnose content rendering issues:
+            </p>
+            <div className="mb-4">
+              <p className="font-medium text-sm mb-1">Content Type:</p>
+              <code className="block bg-white dark:bg-gray-900 p-2 rounded border text-sm">
+                {post?.fields?.body ? typeof post.fields.body : 'No content found'}
+              </code>
             </div>
-          )}
-          
-          {/* Show raw content if markdown is empty */}
-          {getContentMarkdown().trim().length === 0 && (
-            <div className="mt-8 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
-              <h3 className="text-lg font-medium mb-2">Debug Information - Raw Content</h3>
-              <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                The markdown conversion produced no content. Here's the raw content from Contentful:
-              </p>
-              <pre className="whitespace-pre-wrap text-xs bg-white dark:bg-gray-900 p-4 rounded border dark:border-gray-700 overflow-auto max-h-[400px]">
-                {JSON.stringify(post.fields.body, null, 2)}
+            <div>
+              <p className="font-medium text-sm mb-1">Raw Content (first 1000 chars):</p>
+              <pre className="whitespace-pre-wrap text-xs bg-white dark:bg-gray-900 p-4 rounded border dark:border-gray-700 overflow-auto max-h-[200px]">
+                {post?.fields?.body 
+                  ? JSON.stringify(post.fields.body, null, 2).substring(0, 1000) + (JSON.stringify(post.fields.body, null, 2).length > 1000 ? '...' : '')
+                  : 'No content available'
+                }
               </pre>
             </div>
-          )}
+          </div>
         </AnimatedSection>
         
         {/* Recommended posts if available */}
