@@ -17,6 +17,34 @@ import { useAppContext } from '../../context/AppContext';
 import AnimatedSection from '../AnimatedSection';
 import PageTransition from '../PageTransition';
 
+// Global error handler to catch hydration issues
+useEffect(() => {
+  window.addEventListener('error', (e) => {
+    console.error('GLOBAL ERROR:', e);
+    // Try to show error visibly on page
+    const errorDiv = document.createElement('div');
+    errorDiv.style.position = 'fixed';
+    errorDiv.style.bottom = '0';
+    errorDiv.style.left = '0';
+    errorDiv.style.right = '0';
+    errorDiv.style.background = 'red';
+    errorDiv.style.color = 'white';
+    errorDiv.style.padding = '20px';
+    errorDiv.style.zIndex = '9999';
+    errorDiv.innerText = `Error: ${e.message || 'Unknown error'}`;
+    document.body.appendChild(errorDiv);
+  });
+
+  // Check for specific post ID in URL and log it
+  const urlPath = window.location.pathname;
+  console.log('CURRENT URL PATH:', urlPath);
+  
+  if (urlPath.includes('/blog/')) {
+    const postId = urlPath.split('/blog/')[1];
+    console.log('POST ID FROM URL:', postId);
+  }
+}, []);
+
 // Configure Contentful Rich Text options
 const richTextOptions = (isDark: boolean) => ({
   renderMark: {
@@ -76,47 +104,103 @@ const BlogPost = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [missingEnvVars, setMissingEnvVars] = useState(false);
   const [useAlternateRendering, setUseAlternateRendering] = useState(false);
+  const [rawHtml, setRawHtml] = useState<string>('');
   const { isDarkMode } = useAppContext();
   const isPreview = isPreviewModeActive();
   
+  // Log when component mounts
   useEffect(() => {
-    if (!slug) return;
+    console.log('BLOG POST COMPONENT MOUNTED. Slug:', slug);
+  }, []);
+  
+  useEffect(() => {
+    if (!slug) {
+      console.log('NO SLUG FOUND');
+      return;
+    }
     
     const fetchPost = async () => {
+      console.log('FETCHING POST WITH SLUG:', slug);
       setIsLoading(true);
       try {
         // Check if environment variables are set
         if (!import.meta.env.VITE_CONTENTFUL_SPACE_ID || !import.meta.env.VITE_CONTENTFUL_ACCESS_TOKEN) {
+          console.error('MISSING ENV VARS');
           setMissingEnvVars(true);
           setIsLoading(false);
           return;
         }
         
         // First try to fetch by slug
+        console.log('TRYING TO FETCH BY SLUG:', slug);
         let fetchedPost = await getBlogPostBySlug(slug);
         
         // If not found by slug, try by ID (in case the slug parameter is actually an ID)
         if (!fetchedPost) {
-          console.log(`Post not found by slug "${slug}", trying as ID...`);
+          console.log(`POST NOT FOUND BY SLUG "${slug}", TRYING AS ID...`);
           fetchedPost = await getBlogPostById(slug);
         }
         
-        setPost(fetchedPost);
-        
-        if (!fetchedPost) {
-          console.error(`Blog post not found with slug/id: ${slug}`);
-          setError('Blog post not found');
+        if (fetchedPost) {
+          console.log('POST FOUND!', {
+            id: fetchedPost.sys?.id,
+            title: fetchedPost.fields?.title,
+            bodyType: typeof fetchedPost.fields.body,
+            hasBody: !!fetchedPost.fields.body,
+            bodyPreview: typeof fetchedPost.fields.body === 'string' 
+              ? fetchedPost.fields.body.substring(0, 100) 
+              : JSON.stringify(fetchedPost.fields.body).substring(0, 100)
+          });
+          
+          // Create raw HTML version for direct rendering fallback
+          if (typeof fetchedPost.fields.body === 'string') {
+            setRawHtml(fetchedPost.fields.body);
+          } else if (fetchedPost.fields.body) {
+            try {
+              // Try to extract text from the rich text object
+              const extractText = (node: any): string => {
+                if (!node) return '';
+                if (typeof node === 'string') return node;
+                
+                if (node.nodeType === 'text' && node.value) {
+                  return node.value;
+                }
+                
+                if (node.content && Array.isArray(node.content)) {
+                  return node.content.map(extractText).join(' ');
+                }
+                
+                return '';
+              };
+              
+              const textContent = extractText(fetchedPost.fields.body);
+              console.log('EXTRACTED TEXT:', textContent.substring(0, 100));
+              
+              // Convert to basic HTML
+              const htmlContent = `
+                <h1>${fetchedPost.fields.title || 'Blog Post'}</h1>
+                <div>${textContent.split('\n').map(p => `<p>${p}</p>`).join('')}</div>
+              `;
+              setRawHtml(htmlContent);
+            } catch (err: any) {
+              console.error('ERROR CREATING RAW HTML:', err);
+              setRawHtml(`<p>Error rendering content: ${err?.message || 'Unknown error'}</p>`);
+            }
+          }
         } else {
-          console.log('Successfully fetched post:', fetchedPost.fields.title);
+          console.error(`BLOG POST NOT FOUND WITH SLUG/ID: ${slug}`);
+          setError('Blog post not found');
         }
+        
+        setPost(fetchedPost);
         
         // Check if post is bookmarked
         const bookmarks = JSON.parse(localStorage.getItem('blog-bookmarks') || '[]');
         setIsBookmarked(bookmarks.includes(slug));
         
       } catch (err) {
-        console.error(`Error fetching blog post with slug ${slug}:`, err);
-        setError('Failed to load blog post. Please try again later.');
+        console.error(`ERROR FETCHING BLOG POST WITH SLUG ${slug}:`, err);
+        setError(`Failed to load blog post: ${err?.message || 'Unknown error'}`);
       } finally {
         setIsLoading(false);
       }
@@ -163,17 +247,24 @@ const BlogPost = () => {
   
   // Render content using the appropriate method based on the content type
   const renderContent = () => {
+    console.log('RENDER CONTENT CALLED');
     if (!post || !post.fields.body) {
-      console.log('No post or post body found');
-      return <p className="text-red-500">No content available.</p>;
+      console.log('NO POST OR POST BODY FOUND');
+      return (
+        <div className="p-4 bg-yellow-100 text-yellow-800 rounded">
+          <p className="font-bold">No content available</p>
+          <p>Post: {post ? 'exists' : 'null'}</p>
+          <p>Body: {post?.fields?.body ? 'exists' : 'null'}</p>
+        </div>
+      );
     }
     
-    console.log('Post body type:', typeof post.fields.body);
-    console.log('Post ID:', post.sys.id);
+    console.log('POST BODY TYPE:', typeof post.fields.body);
+    console.log('POST ID:', post.sys.id);
     
-    // Special handling for known problematic post ID
-    if (post.sys.id === '4teKNzPkzDPysbkdacG8D0') {
-      console.log('Using special handler for problematic post');
+    // Special handling for known problematic post ID - FIXED ID CHECK!
+    if (slug === '4teKNzPkzDPysbkdacG8D0') {
+      console.log('USING SPECIAL HANDLER FOR PROBLEMATIC POST ID');
       return (
         <div className="blog-content">
           <h2>Why Your Website Isn't Ranking on Google (And How to Fix It)</h2>
@@ -292,28 +383,42 @@ const BlogPost = () => {
     
     // If body is a string (markdown or HTML), use ReactMarkdown
     if (typeof post.fields.body === 'string') {
-      console.log('Rendering string content with ReactMarkdown');
-      return (
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          rehypePlugins={[rehypeRaw]}
-        >
-          {post.fields.body}
-        </ReactMarkdown>
-      );
+      console.log('RENDERING STRING CONTENT WITH REACTMARKDOWN');
+      try {
+        return (
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeRaw]}
+          >
+            {post.fields.body}
+          </ReactMarkdown>
+        );
+      } catch (err: any) {
+        console.error('ERROR RENDERING MARKDOWN:', err);
+        return (
+          <div className="p-4 border border-red-300 rounded bg-red-50">
+            <p className="font-bold">Error rendering markdown</p>
+            <p>{err?.message || 'Unknown error'}</p>
+            <pre className="mt-2 bg-white p-2 rounded text-xs overflow-auto">
+              {post.fields.body.substring(0, 500)}...
+            </pre>
+          </div>
+        );
+      }
     }
     
     // If body is a Contentful Rich Text object, use the contentful renderer
     if (typeof post.fields.body === 'object') {
       try {
-        console.log('Rendering Rich Text content with Contentful renderer');
+        console.log('RENDERING RICH TEXT CONTENT WITH CONTENTFUL RENDERER');
         return documentToReactComponents(post.fields.body, richTextOptions(isDarkMode));
-      } catch (err) {
-        console.error('Error rendering Rich Text:', err);
+      } catch (err: any) {
+        console.error('ERROR RENDERING RICH TEXT:', err);
         return (
           <div className="p-4 border border-red-300 rounded bg-red-50 dark:bg-red-900/20 dark:border-red-900 text-red-800 dark:text-red-300">
             <h3 className="font-bold mb-2">Error rendering content</h3>
             <p>There was an error rendering the content from Contentful. Please check your content structure.</p>
+            <p className="font-bold mt-2">Error: {err?.message || 'Unknown error'}</p>
             <pre className="mt-4 text-xs bg-white dark:bg-gray-900 p-3 rounded overflow-auto max-h-[200px]">
               {JSON.stringify(post.fields.body, null, 2)}
             </pre>
@@ -430,6 +535,19 @@ const BlogPost = () => {
   return (
     <PageTransition>
       <article className="max-w-4xl mx-auto px-4 py-12">
+        {/* Debugging banner - always visible */}
+        <div className="p-4 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 rounded-lg mb-6 border border-purple-200 dark:border-purple-800">
+          <h2 className="font-bold text-lg mb-2">Debug Information</h2>
+          <ul className="text-sm space-y-1">
+            <li><strong>URL Slug:</strong> {slug || 'Not available'}</li>
+            <li><strong>Post Loaded:</strong> {post ? 'Yes' : 'No'}</li>
+            <li><strong>Post ID:</strong> {post?.sys?.id || 'Unknown'}</li>
+            <li><strong>Content Type:</strong> {post?.fields?.body ? typeof post.fields.body : 'No content'}</li>
+            <li><strong>Is Loading:</strong> {isLoading ? 'Yes' : 'No'}</li>
+            <li><strong>Has Error:</strong> {error ? 'Yes: ' + error : 'No'}</li>
+          </ul>
+        </div>
+
         {/* Back link */}
         <div className="mb-8">
           <Link 
@@ -562,32 +680,50 @@ const BlogPost = () => {
             </button>
           </div>
           
-          {/* Main content */}
-          <div className={`my-8 p-8 border border-gray-100 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-900 shadow-sm ${
-            isDarkMode ? 'text-gray-200' : 'text-gray-800'
-          }`}>
+          {/* Visual marker at top of content area */}
+          <div className="p-2 my-4 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-lg text-center font-bold">
+            START OF CONTENT AREA - If you see this but no content below, rendering is failing
+          </div>
+          
+          {/* Main content with forced visibility */}
+          <div 
+            className="my-8 p-8 border border-gray-100 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-900 shadow-sm"
+            style={{
+              display: 'block',
+              visibility: 'visible' as const,
+              opacity: 1,
+              minHeight: '200px'
+            }}
+          >
+            {/* Primary content rendering */}
             {renderContent()}
           </div>
           
-          {/* Additional debug information - always show for now until we fix the issue */}
-          <div className="mt-8 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
-            <h3 className="text-lg font-medium mb-2">Debug Information</h3>
-            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-              This information can help diagnose content rendering issues:
-            </p>
-            <div className="mb-4">
-              <p className="font-medium text-sm mb-1">Content Type:</p>
-              <code className="block bg-white dark:bg-gray-900 p-2 rounded border text-sm">
-                {post?.fields?.body ? typeof post.fields.body : 'No content found'}
-              </code>
+          {/* Fallback: Direct HTML rendering approach */}
+          <div className="my-8">
+            <div className="p-2 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-lg text-center font-bold mb-4">
+              FALLBACK RENDERING - If content appears below but not above, React rendering is failing
             </div>
-            <div>
-              <p className="font-medium text-sm mb-1">Raw Content (first 1000 chars):</p>
-              <pre className="whitespace-pre-wrap text-xs bg-white dark:bg-gray-900 p-4 rounded border dark:border-gray-700 overflow-auto max-h-[200px]">
-                {post?.fields?.body 
-                  ? JSON.stringify(post.fields.body, null, 2).substring(0, 1000) + (JSON.stringify(post.fields.body, null, 2).length > 1000 ? '...' : '')
-                  : 'No content available'
-                }
+            
+            <div 
+              className="p-8 border border-blue-200 dark:border-blue-800 rounded-lg bg-white dark:bg-gray-900 shadow-sm"
+              dangerouslySetInnerHTML={{ __html: rawHtml || '<p>No raw HTML content available</p>' }}
+            ></div>
+          </div>
+          
+          {/* Visual marker at bottom of content area */}
+          <div className="p-2 my-4 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded-lg text-center font-bold">
+            END OF CONTENT AREA - If you see this, the content container is rendering
+          </div>
+          
+          {/* Raw data display */}
+          <div className="mt-8 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
+            <h3 className="text-lg font-medium mb-2">Complete Debug Information</h3>
+            
+            <div className="mb-4">
+              <h4 className="font-medium text-sm mb-1">Contentful Response:</h4>
+              <pre className="whitespace-pre-wrap text-xs bg-white dark:bg-gray-900 p-4 rounded border dark:border-gray-700 overflow-auto max-h-[400px]">
+                {post ? JSON.stringify(post, null, 2) : 'No post data available'}
               </pre>
             </div>
           </div>
