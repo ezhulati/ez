@@ -457,7 +457,7 @@ const BlogPost = () => {
                 </div>
               )}
               <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {post.fields.author?.fields?.name || 'Unknown Author'}
+                {post.fields.author?.fields?.name || (post.sys.id === '4teKNzPkzDPysbkdacG8D0' ? 'Enri Zhulati' : 'Unknown Author')}
               </span>
             </div>
             
@@ -542,10 +542,10 @@ const BlogPost = () => {
                 <h3 className={`text-xl font-bold mb-2 ${
                   isDarkMode ? 'text-white' : 'text-gray-900'
                 }`}>About the Author</h3>
-                <p className={`mb-3 ${
-                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  {post.fields.author?.fields?.name || 'Unknown Author'} is a digital marketing specialist with expertise in SEO, 
+                <p className={`${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                } leading-relaxed`}>
+                  {post.fields.author?.fields?.name || (post.sys.id === '4teKNzPkzDPysbkdacG8D0' ? 'Enri Zhulati' : 'Unknown Author')} is a digital marketing specialist with expertise in SEO,
                   content strategy, and website optimization.
                 </p>
                 <div className="flex gap-3">
