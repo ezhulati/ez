@@ -161,6 +161,26 @@ export const getBlogPostBySlug = async (slug: string): Promise<BlogPost | null> 
 };
 
 /**
+ * Get a single blog post by ID
+ */
+export const getBlogPostById = async (id: string): Promise<BlogPost | null> => {
+  try {
+    // Try to get the entry directly by ID (works for both content types)
+    const response = await getClient().getEntry(id);
+    
+    if (response) {
+      console.log(`Blog post found with ID ${id}`);
+      return response as unknown as BlogPost;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error fetching blog post with ID ${id}:`, error);
+    return null;
+  }
+};
+
+/**
  * Get blog posts by category
  */
 export const getBlogPostsByCategory = async (category: string): Promise<BlogPost[]> => {

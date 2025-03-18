@@ -3,7 +3,12 @@ import { useParams, Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Calendar, Clock, ArrowLeft, User, Tag, Share2, Bookmark, BookmarkCheck, AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { getBlogPostBySlug, BlogPost as BlogPostType, isPreviewModeActive } from '../../services/contentful';
+import { 
+  getBlogPostBySlug, 
+  getBlogPostById,
+  BlogPost as BlogPostType, 
+  isPreviewModeActive 
+} from '../../services/contentful';
 import { useAppContext } from '../../context/AppContext';
 import AnimatedSection from '../AnimatedSection';
 import PageTransition from '../PageTransition';
@@ -128,11 +133,22 @@ const BlogPost = () => {
           return;
         }
         
-        const fetchedPost = await getBlogPostBySlug(slug);
+        // First try to fetch by slug
+        let fetchedPost = await getBlogPostBySlug(slug);
+        
+        // If not found by slug, try by ID (in case the slug parameter is actually an ID)
+        if (!fetchedPost) {
+          console.log(`Post not found by slug "${slug}", trying as ID...`);
+          fetchedPost = await getBlogPostById(slug);
+        }
+        
         setPost(fetchedPost);
         
         if (!fetchedPost) {
+          console.error(`Blog post not found with slug/id: ${slug}`);
           setError('Blog post not found');
+        } else {
+          console.log('Successfully fetched post:', fetchedPost.fields.title);
         }
         
         // Check if post is bookmarked
