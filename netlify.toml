@@ -12,14 +12,11 @@
 
 # Build hooks - can be triggered by Contentful webhooks
 [build.environment]
-  CONTENTFUL_REBUILD_HOOK = "https://api.netlify.com/build_hooks/67d782602c666be1d13a74e5"
-
-# Builds triggered by Contentful will have these environment variables
-[template.environment]
-  VITE_CONTENTFUL_SPACE_ID = "Set during Contentful integration"
-  VITE_CONTENTFUL_ACCESS_TOKEN = "Set during Contentful integration"
-  VITE_CONTENTFUL_PREVIEW_TOKEN = "Set during Contentful integration"
+  VITE_CONTENTFUL_SPACE_ID = "hdo1k8om3hmw"
+  VITE_CONTENTFUL_ACCESS_TOKEN = "g29C2epdpHoOQsex08PJXphQYxqVWsN-cUZBbO9QA4A"
+  VITE_CONTENTFUL_PREVIEW_TOKEN = "81cfBHWQVwo4pe7ZPisFfvJrzpwCy-AHyBEuf_DA5tQ"
   VITE_CONTENTFUL_ENVIRONMENT = "master"
+  CONTENTFUL_REBUILD_HOOK = "https://api.netlify.com/build_hooks/67d782602c666be1d13a74e5"
 
 # Build optimization
 [build.processing]
