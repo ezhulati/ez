@@ -9,8 +9,8 @@ export type BlogPost = {
   };
   fields: {
     title: string;
-    slug: string;
-    featuredImage: {
+    slug?: string;
+    image?: {
       fields: {
         file: {
           url: string;
@@ -24,10 +24,11 @@ export type BlogPost = {
         title: string;
       };
     };
-    excerpt: string;
-    content: string;
-    categories: string[];
-    author: {
+    excerpt?: string;
+    body?: string;
+    recommendedPosts?: any[];
+    categories?: string[];
+    author?: {
       fields: {
         name: string;
         avatar?: {
@@ -76,7 +77,7 @@ const getClient = () => {
 export const getBlogPosts = async (limit?: number): Promise<BlogPost[]> => {
   try {
     const response = await getClient().getEntries({
-      content_type: 'blogPost',
+      content_type: 'blogPage',
       order: '-sys.createdAt',
       limit: limit || 100,
     });
@@ -94,7 +95,7 @@ export const getBlogPosts = async (limit?: number): Promise<BlogPost[]> => {
 export const getBlogPostBySlug = async (slug: string): Promise<BlogPost | null> => {
   try {
     const response = await getClient().getEntries({
-      content_type: 'blogPost',
+      content_type: 'blogPage',
       'fields.slug': slug,
       limit: 1,
     });
@@ -116,7 +117,7 @@ export const getBlogPostBySlug = async (slug: string): Promise<BlogPost | null> 
 export const getBlogPostsByCategory = async (category: string): Promise<BlogPost[]> => {
   try {
     const response = await getClient().getEntries({
-      content_type: 'blogPost',
+      content_type: 'blogPage',
       'fields.categories[in]': category,
       order: '-sys.createdAt',
     });

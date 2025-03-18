@@ -135,43 +135,49 @@ const BlogList = () => {
         )}
       </div>
       
-      {/* Results count */}
-      <p className={`mb-6 text-sm ${
-        isDarkMode ? 'text-gray-400' : 'text-gray-500'
-      }`}>
-        {filteredPosts.length === 0 
-          ? 'No posts found' 
-          : `Showing ${filteredPosts.length} ${filteredPosts.length === 1 ? 'post' : 'posts'}`
-        }
-      </p>
-      
-      {/* Blog posts grid */}
-      {filteredPosts.length > 0 ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPosts.map((post, index) => (
-            <BlogPostCard key={post.sys.id} post={post} index={index} />
-          ))}
-        </div>
-      ) : (
-        <div className={`text-center py-16 ${
-          isDarkMode ? 'bg-gray-800/40' : 'bg-gray-50'
-        } rounded-lg`}>
-          <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">
-            No matching blog posts
+      {/* No results */}
+      {filteredPosts.length === 0 && (
+        <div className="min-h-[200px] flex flex-col items-center justify-center text-center p-8">
+          <div className="text-3xl mb-4">🔍</div>
+          <h3 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            No matching articles found
           </h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
-            Try adjusting your search or filter criteria
+          <p className={`max-w-md mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            Try adjusting your search or filters to find what you're looking for.
           </p>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className={`px-4 py-2 rounded-lg mr-2 ${
+                isDarkMode
+                  ? 'bg-gray-800 text-gray-200 hover:bg-gray-700'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Clear search
+            </button>
+          )}
           {selectedCategory && (
             <button
               onClick={() => setSelectedCategory(null)}
-              className="text-blue-600 dark:text-blue-400 hover:underline"
+              className={`px-4 py-2 rounded-lg ${
+                isDarkMode
+                  ? 'bg-gray-800 text-gray-200 hover:bg-gray-700'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
             >
               Clear category filter
             </button>
           )}
         </div>
       )}
+      
+      {/* Blog post grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {filteredPosts.map((post, index) => (
+          <BlogPostCard key={post.sys.id} post={post} index={index} />
+        ))}
+      </div>
     </div>
   );
 };
@@ -184,29 +190,29 @@ interface BlogPostCardProps {
 const BlogPostCard = ({ post, index }: BlogPostCardProps) => {
   const { isDarkMode } = useAppContext();
   
-  // Calculate animation delay based on index
-  const delay = 0.1 + (index * 0.1);
-  
-  // Format date if available
+  // Format date
   const formattedDate = post.fields.publishedDate 
-    ? format(new Date(post.fields.publishedDate), 'MMMM d, yyyy')
-    : format(new Date(post.sys.createdAt), 'MMMM d, yyyy');
+    ? format(new Date(post.fields.publishedDate), 'MMM d, yyyy')
+    : format(new Date(post.sys.createdAt), 'MMM d, yyyy');
   
   // Get image URL or use a placeholder
-  const imageUrl = post.fields.featuredImage?.fields?.file?.url 
-    ? `https:${post.fields.featuredImage.fields.file.url}`
-    : 'https://images.unsplash.com/photo-1519681393784-d120267933ba';
+  const imageUrl = post.fields.image?.fields?.file?.url 
+    ? `https:${post.fields.image.fields.file.url}`
+    : `https://images.unsplash.com/photo-${1500000000000 + index}`;
+  
+  // Estimate reading time
+  const content = post.fields.body || '';
+  const wordCount = content.split(/\s+/).length;
+  const readingTime = Math.max(1, Math.ceil(wordCount / 200));
   
   return (
     <AnimatedSection
-      delay={delay}
-      className={`group overflow-hidden rounded-xl border shadow-sm transition-all duration-300 hover:-translate-y-1 ${
-        isDarkMode 
-          ? 'bg-gray-800/50 border-gray-700/50 hover:shadow-gray-800/40' 
-          : 'bg-white border-gray-200 hover:shadow-lg'
+      className={`group h-full rounded-xl overflow-hidden shadow-sm transition-shadow hover:shadow-md ${
+        isDarkMode ? 'bg-gray-800 shadow-gray-900' : 'bg-white shadow-gray-200'
       }`}
+      delay={index * 0.1}
     >
-      <Link to={`/blog/${post.fields.slug}`} className="block h-full">
+      <Link to={post.fields.slug ? `/blog/${post.fields.slug}` : `/blog/${post.sys.id}`} className="block h-full">
         <div className="relative h-48 overflow-hidden">
           <img 
             src={imageUrl}
@@ -229,36 +235,48 @@ const BlogPostCard = ({ post, index }: BlogPostCardProps) => {
         </div>
         
         <div className="p-5">
-          <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-3">
-            <span className="flex items-center">
-              <Calendar size={12} className="mr-1" />
-              {formattedDate}
-            </span>
-            <span className="mx-2">•</span>
-            <span className="flex items-center">
-              <Clock size={12} className="mr-1" />
-              5 min read
-            </span>
-          </div>
-          
-          <h3 className={`text-lg font-semibold leading-tight mb-2 group-hover:text-blue-600 ${
-            isDarkMode ? 'text-white group-hover:text-blue-400' : 'text-gray-900'
-          }`}>
+          <h3 className={`text-xl font-bold mb-2 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          } group-hover:text-blue-600 transition-colors`}>
             {post.fields.title}
           </h3>
           
-          <p className={`text-sm line-clamp-2 mb-4 ${
-            isDarkMode ? 'text-gray-300' : 'text-gray-600'
-          }`}>
-            {post.fields.excerpt}
-          </p>
+          {post.fields.excerpt && (
+            <p className={`mb-4 line-clamp-3 ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-600'
+            }`}>
+              {post.fields.excerpt}
+            </p>
+          )}
           
-          <div className="flex items-center mt-auto">
-            <div className="inline-flex items-center justify-center text-sm text-blue-600 dark:text-blue-400 group-hover:underline">
-              Read more
-              <ArrowRight size={14} className="ml-1.5 group-hover:translate-x-1 transition-transform" />
+          <div className="flex justify-between items-center pt-2">
+            <div className={`flex items-center text-sm ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
+              <Calendar size={14} className="mr-1" />
+              <span>{formattedDate}</span>
+            </div>
+            
+            <div className={`flex items-center text-sm ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
+              <Clock size={14} className="mr-1" />
+              <span>{readingTime} min read</span>
             </div>
           </div>
+        </div>
+        
+        <div className={`px-5 pb-5 pt-2 border-t flex justify-between items-center ${
+          isDarkMode ? 'border-gray-700' : 'border-gray-100'
+        }`}>
+          <span className={`text-sm font-medium ${
+            isDarkMode ? 'text-blue-400' : 'text-blue-600'
+          } group-hover:underline`}>
+            Read more
+          </span>
+          <ArrowRight size={16} className={
+            isDarkMode ? 'text-blue-400' : 'text-blue-600'
+          } />
         </div>
       </Link>
     </AnimatedSection>

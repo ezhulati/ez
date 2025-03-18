@@ -14,6 +14,7 @@ const BlogPost = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [missingEnvVars, setMissingEnvVars] = useState(false);
   const { isDarkMode } = useAppContext();
   const isPreview = isPreviewModeActive();
   
@@ -23,6 +24,13 @@ const BlogPost = () => {
     const fetchPost = async () => {
       setIsLoading(true);
       try {
+        // Check if environment variables are set
+        if (!import.meta.env.VITE_CONTENTFUL_SPACE_ID || !import.meta.env.VITE_CONTENTFUL_ACCESS_TOKEN) {
+          setMissingEnvVars(true);
+          setIsLoading(false);
+          return;
+        }
+        
         const fetchedPost = await getBlogPostBySlug(slug);
         setPost(fetchedPost);
         
@@ -81,6 +89,34 @@ const BlogPost = () => {
     }
   };
   
+  if (missingEnvVars) {
+    return (
+      <div className={`p-6 rounded-lg border ${
+        isDarkMode 
+          ? 'bg-yellow-900/30 border-yellow-800 text-yellow-200' 
+          : 'bg-yellow-50 border-yellow-200 text-yellow-800'
+      }`}>
+        <div className="flex items-start">
+          <AlertTriangle className="h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-medium text-lg mb-2">Contentful Configuration Required</h3>
+            <p className="mb-3">
+              Missing Contentful environment variables. To display blog content, please set up the following in your .env file:
+            </p>
+            <ul className="list-disc pl-5 mb-4 space-y-1 text-sm">
+              <li>VITE_CONTENTFUL_SPACE_ID</li>
+              <li>VITE_CONTENTFUL_ACCESS_TOKEN</li>
+              <li>VITE_CONTENTFUL_PREVIEW_TOKEN (optional for preview mode)</li>
+            </ul>
+            <p className="text-sm">
+              See the README.md file for complete setup instructions.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   if (isLoading) {
     return (
       <div className="min-h-[400px] flex flex-col items-center justify-center py-12">
@@ -119,12 +155,13 @@ const BlogPost = () => {
     : format(new Date(post.sys.createdAt), 'MMMM d, yyyy');
   
   // Get image URL or use a placeholder
-  const featuredImageUrl = post.fields.featuredImage?.fields?.file?.url 
-    ? `https:${post.fields.featuredImage.fields.file.url}`
+  const featuredImageUrl = post.fields.image?.fields?.file?.url 
+    ? `https:${post.fields.image.fields.file.url}`
     : 'https://images.unsplash.com/photo-1519681393784-d120267933ba';
   
   // Determine reading time (rough estimate based on word count)
-  const wordCount = post.fields.content?.split(/\s+/).length || 0;
+  const content = post.fields.body || '';
+  const wordCount = content.split(/\s+/).length || 0;
   const readingTime = Math.max(1, Math.ceil(wordCount / 200)); // Average reading speed of 200 wpm
   
   return (
@@ -233,47 +270,55 @@ const BlogPost = () => {
           </div>
           
           {/* Article sharing/actions */}
-          <div className={`flex justify-end gap-3 mb-8 pb-4 border-b ${
-            isDarkMode ? 'border-gray-700' : 'border-gray-200'
-          }`}>
-            <button 
-              onClick={handleShare}
-              className={`p-2 rounded-full ${
-                isDarkMode 
-                  ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
-                  : 'text-gray-500 hover:text-blue-600 hover:bg-gray-100'
-              } transition-colors`}
-              title="Share article"
-            >
-              <Share2 size={18} />
-            </button>
-            
-            <button 
+          <div className="flex justify-end mb-6 space-x-2">
+            <button
               onClick={toggleBookmark}
               className={`p-2 rounded-full ${
-                isBookmarked
-                  ? isDarkMode 
-                    ? 'text-blue-400 bg-blue-900/30' 
-                    : 'text-blue-600 bg-blue-50'
-                  : isDarkMode 
-                    ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
-                    : 'text-gray-500 hover:text-blue-600 hover:bg-gray-100'
+                isDarkMode 
+                  ? isBookmarked ? 'bg-blue-900/50 text-blue-300' : 'bg-gray-800 text-gray-400 hover:text-gray-300 hover:bg-gray-700'
+                  : isBookmarked ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200'
               } transition-colors`}
-              title={isBookmarked ? "Remove bookmark" : "Bookmark article"}
+              aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark this article'}
             >
               {isBookmarked ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
             </button>
+            
+            <button
+              onClick={handleShare}
+              className={`p-2 rounded-full ${
+                isDarkMode 
+                  ? 'bg-gray-800 text-gray-400 hover:text-gray-300 hover:bg-gray-700'
+                  : 'bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+              } transition-colors`}
+              aria-label="Share this article"
+            >
+              <Share2 size={18} />
+            </button>
           </div>
           
-          {/* Content */}
+          {/* Main content */}
           <div className={`prose max-w-none ${
             isDarkMode ? 'prose-invert' : ''
-          } prose-headings:font-semibold prose-a:text-blue-600 dark:prose-a:text-blue-400`}>
+          } prose-headings:font-bold prose-a:text-blue-600 dark:prose-a:text-blue-400`}>
             <ReactMarkdown>
-              {post.fields.content}
+              {post.fields.body || ''}
             </ReactMarkdown>
           </div>
         </AnimatedSection>
+        
+        {/* Recommended posts if available */}
+        {post.fields.recommendedPosts && post.fields.recommendedPosts.length > 0 && (
+          <div className="mt-16">
+            <h2 className={`text-2xl font-bold mb-6 ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
+              You might also like
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Render recommended posts here */}
+            </div>
+          </div>
+        )}
       </article>
     </PageTransition>
   );
