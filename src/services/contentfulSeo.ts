@@ -1,11 +1,22 @@
-import { getBlogPostBySlug } from './contentful';
+import { getBlogPostBySlug, getBlogPostByCustomUrl, getBlogPostById } from './contentful';
 import client from './contentful';
 
 /**
- * Get SEO fields for a blog post by slug
+ * Get SEO fields for a blog post by slug, custom URL, or ID
  */
-export const getPostSeoFields = async (slug: string) => {
-  const post = await getBlogPostBySlug(slug);
+export const getPostSeoFields = async (identifier: string) => {
+  // Try in this order: slug, custom URL, ID
+  let post = await getBlogPostBySlug(identifier);
+  
+  // If not found, try by custom URL
+  if (!post) {
+    post = await getBlogPostByCustomUrl(identifier);
+  }
+  
+  // If still not found, try by ID
+  if (!post) {
+    post = await getBlogPostById(identifier);
+  }
   
   if (!post) {
     return null;

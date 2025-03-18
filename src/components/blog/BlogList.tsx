@@ -318,7 +318,10 @@ const BlogPostCard = ({ post, index }: BlogPostCardProps) => {
   
   // Generate URL for blog post
   const getPostUrl = () => {
-    if (post.fields.slug) {
+    // Prefer customUrl, then slug, then ID
+    if (post.fields.customUrl) {
+      return `/blog/${post.fields.customUrl}`;
+    } else if (post.fields.slug) {
       return `/blog/${post.fields.slug}`;
     }
     return `/blog/${post.sys.id}`;

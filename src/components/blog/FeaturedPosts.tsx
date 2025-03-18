@@ -66,7 +66,7 @@ const FeaturedPosts = () => {
                 }`}
                 delay={0.1 * index}
               >
-                <Link to={`/blog/${post.fields.slug}`} className="block h-full">
+                <Link to={`/blog/${post.fields.customUrl || post.fields.slug || post.sys.id}`} className="block h-full">
                   <div className="h-40 overflow-hidden">
                     <img
                       src={imageUrl}
