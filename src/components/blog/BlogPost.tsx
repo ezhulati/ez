@@ -265,53 +265,6 @@ const BlogPost = () => {
       );
     }
     
-    // For the problematic post ID, use hardcoded content
-    if (slug === '4teKNzPkzDPysbkdacG8D0') {
-      console.log('USING SPECIAL HANDLER FOR PROBLEMATIC POST ID');
-      return (
-        <div className="blog-content">
-          <h2 className="text-2xl font-bold mb-4">Why Your Website Isn't Ranking on Google (And How to Fix It)</h2>
-          <p className="mb-4">
-            You've invested time and resources into your website, but it's nowhere to be found on Google search results. 
-            This frustrating situation is common for many business owners and marketers.
-          </p>
-          <p className="mb-4">
-            In this article, we'll explore the most common reasons websites fail to rank on Google and provide 
-            actionable steps to fix these issues. By addressing these factors, you can improve your website's 
-            visibility and start attracting organic traffic from search engines.
-          </p>
-          <h3 className="text-xl font-bold mt-6 mb-3">1. Your Website Is Too New</h3>
-          <p className="mb-4">
-            If you've recently launched your website, patience is key. Google typically takes time to index and 
-            rank new websites, a period often referred to as the "Google sandbox."
-          </p>
-          <p className="font-medium mb-2">How to fix it:</p>
-          <ul className="list-disc pl-6 mb-6">
-            <li className="mb-1">Submit your sitemap through Google Search Console</li>
-            <li className="mb-1">Create and maintain social media profiles that link to your website</li>
-            <li className="mb-1">Develop a consistent content publishing schedule</li>
-            <li className="mb-1">Focus on building quality backlinks from reputable sources</li>
-          </ul>
-          
-          <h3 className="text-xl font-bold mt-6 mb-3">2. Technical SEO Issues</h3>
-          <p className="mb-4">
-            Technical SEO problems can prevent Google from properly crawling and indexing your site.
-          </p>
-          
-          <h3 className="text-xl font-bold mt-6 mb-3">Conclusion</h3>
-          <p className="mb-4">
-            Improving your website's Google rankings doesn't happen overnight. It requires a strategic approach 
-            addressing multiple factors, from technical optimizations to quality content creation and link building.
-          </p>
-          <p className="mb-4">
-            If you need help improving your website's SEO performance, I specialize in developing comprehensive 
-            strategies tailored to your specific business needs. Contact me today to discuss how we can boost 
-            your online visibility and drive more qualified traffic to your website.
-          </p>
-        </div>
-      );
-    }
-    
     // If body is a string (markdown or HTML), use ReactMarkdown
     if (typeof post.fields.body === 'string') {
       console.log('RENDERING STRING CONTENT WITH REACTMARKDOWN');
@@ -458,20 +411,6 @@ const BlogPost = () => {
             Back to all articles
           </Link>
         </div>
-        
-        {/* Preview mode banner */}
-        {isPreview && (
-          <div className={`mb-6 p-3 rounded-lg flex items-center gap-2 ${
-            isDarkMode 
-              ? 'bg-blue-900/30 text-blue-200 border border-blue-800' 
-              : 'bg-blue-50 text-blue-800 border border-blue-200'
-          }`}>
-            <AlertTriangle size={18} />
-            <p className="text-sm">
-              You're viewing this post in <strong>preview mode</strong>. This might include unpublished changes.
-            </p>
-          </div>
-        )}
         
         <AnimatedSection>
           {/* Categories with improved styling */}
