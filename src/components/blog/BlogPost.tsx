@@ -444,30 +444,17 @@ const BlogPost = () => {
   return (
     <PageTransition>
       <article className="max-w-4xl mx-auto px-4 py-12">
-        {/* Debugging banner - always visible */}
-        <div className="p-4 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 rounded-lg mb-6 border border-purple-200 dark:border-purple-800">
-          <h2 className="font-bold text-lg mb-2">Debug Information</h2>
-          <ul className="text-sm space-y-1">
-            <li><strong>URL Slug:</strong> {slug || 'Not available'}</li>
-            <li><strong>Post Loaded:</strong> {post ? 'Yes' : 'No'}</li>
-            <li><strong>Post ID:</strong> {post?.sys?.id || 'Unknown'}</li>
-            <li><strong>Content Type:</strong> {post?.fields?.body ? typeof post.fields.body : 'No content'}</li>
-            <li><strong>Is Loading:</strong> {isLoading ? 'Yes' : 'No'}</li>
-            <li><strong>Has Error:</strong> {error ? 'Yes: ' + error : 'No'}</li>
-          </ul>
-        </div>
-
-        {/* Back link */}
-        <div className="mb-8">
+        {/* Back link with improved styling */}
+        <div className="mb-10">
           <Link 
             to="/blog" 
-            className={`inline-flex items-center text-sm font-medium ${
+            className={`inline-flex items-center text-sm font-medium transition-all hover:translate-x-[-3px] ${
               isDarkMode 
                 ? 'text-gray-400 hover:text-blue-400' 
                 : 'text-gray-500 hover:text-blue-600'
-            } transition-colors`}
+            }`}
           >
-            <ArrowLeft size={16} className="mr-1" />
+            <ArrowLeft size={16} className="mr-2" />
             Back to all articles
           </Link>
         </div>
@@ -487,50 +474,50 @@ const BlogPost = () => {
         )}
         
         <AnimatedSection>
-          {/* Categories */}
+          {/* Categories with improved styling */}
           {post.fields.categories && post.fields.categories.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-5">
               {post.fields.categories.map(category => (
                 <Link 
                   key={category}
                   to={`/blog?category=${encodeURIComponent(category)}`}
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                  className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                     isDarkMode 
                       ? 'bg-blue-900/80 text-blue-200 hover:bg-blue-800/80' 
                       : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                  } transition-colors`}
+                  }`}
                 >
-                  <Tag size={12} className="mr-1" />
+                  <Tag size={12} className="mr-1.5" />
                   {category}
                 </Link>
               ))}
             </div>
           )}
           
-          {/* Title */}
-          <h1 className={`text-3xl sm:text-4xl font-bold mb-4 ${
+          {/* Title with enhanced typography */}
+          <h1 className={`text-3xl sm:text-4xl md:text-5xl font-bold mb-6 leading-tight ${
             isDarkMode ? 'text-white' : 'text-gray-900'
           }`}>
             {post.fields.title}
           </h1>
           
-          {/* Meta information */}
-          <div className="flex flex-wrap items-center gap-4 mb-6">
+          {/* Meta information with improved layout */}
+          <div className="flex flex-wrap items-center gap-5 mb-8 border-b border-gray-100 dark:border-gray-800 pb-6">
             <div className="flex items-center">
               {post.fields.author?.fields?.avatar?.fields?.file?.url ? (
                 <img 
                   src={`https:${post.fields.author.fields.avatar.fields.file.url}`}
                   alt={post.fields.author.fields.name}
-                  className="w-8 h-8 rounded-full mr-2 object-cover"
+                  className="w-9 h-9 rounded-full mr-2.5 object-cover border-2 border-white dark:border-gray-800 shadow-sm"
                 />
               ) : (
-                <div className={`w-8 h-8 rounded-full mr-2 flex items-center justify-center ${
+                <div className={`w-9 h-9 rounded-full mr-2.5 flex items-center justify-center ${
                   isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
                 }`}>
-                  <User size={16} className={isDarkMode ? 'text-gray-400' : 'text-gray-500'} />
+                  <User size={18} className={isDarkMode ? 'text-gray-400' : 'text-gray-500'} />
                 </div>
               )}
-              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+              <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 {post.fields.author?.fields?.name || 'Unknown Author'}
               </span>
             </div>
@@ -538,39 +525,39 @@ const BlogPost = () => {
             <div className={`flex items-center ${
               isDarkMode ? 'text-gray-400' : 'text-gray-500'
             }`}>
-              <Calendar size={16} className="mr-1" />
+              <Calendar size={16} className="mr-1.5" />
               <span>{formattedDate}</span>
             </div>
             
             <div className={`flex items-center ${
               isDarkMode ? 'text-gray-400' : 'text-gray-500'
             }`}>
-              <Clock size={16} className="mr-1" />
+              <Clock size={16} className="mr-1.5" />
               <span>{readingTime} min read</span>
             </div>
           </div>
           
-          {/* Featured Image */}
-          <div className="rounded-xl overflow-hidden mb-8">
+          {/* Featured Image with enhanced styling */}
+          <div className="rounded-xl overflow-hidden mb-10 shadow-lg">
             <img 
               src={featuredImageUrl}
               alt={post.fields.title}
-              className="w-full h-auto max-h-[500px] object-cover"
+              className="w-full h-auto max-h-[500px] object-cover transform hover:scale-105 transition-transform duration-700"
               loading="lazy"
               width="1200"
               height="600"
             />
           </div>
           
-          {/* Article sharing/actions */}
-          <div className="flex justify-end mb-6 space-x-2">
+          {/* Article sharing/actions with improved styling */}
+          <div className="flex justify-end mb-8 space-x-2">
             <button
               onClick={toggleBookmark}
-              className={`p-2 rounded-full ${
+              className={`p-2.5 rounded-full transition-all hover:scale-110 ${
                 isDarkMode 
                   ? isBookmarked ? 'bg-blue-900/50 text-blue-300' : 'bg-gray-800 text-gray-400 hover:text-gray-300 hover:bg-gray-700'
                   : isBookmarked ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200'
-              } transition-colors`}
+              }`}
               aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark this article'}
             >
               {isBookmarked ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
@@ -578,43 +565,146 @@ const BlogPost = () => {
             
             <button
               onClick={handleShare}
-              className={`p-2 rounded-full ${
+              className={`p-2.5 rounded-full transition-all hover:scale-110 ${
                 isDarkMode 
                   ? 'bg-gray-800 text-gray-400 hover:text-gray-300 hover:bg-gray-700'
                   : 'bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200'
-              } transition-colors`}
+              }`}
               aria-label="Share this article"
             >
               <Share2 size={18} />
             </button>
           </div>
           
-          {/* Main content area with simplified structure */}
+          {/* Main content area with enhanced styling */}
           <div 
-            className="my-8 p-8 border border-gray-100 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-900 shadow-sm"
+            className="my-8 p-8 sm:p-10 border border-gray-100 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-900 shadow-md"
           >
             {renderContent()}
           </div>
           
-          {/* Simple fallback rendering - without any complex logic */}
-          {slug === '4teKNzPkzDPysbkdacG8D0' && (
-            <div className="my-8 p-8 border border-blue-100 dark:border-blue-800 rounded-lg bg-white dark:bg-gray-900 shadow-sm">
-              <h2 className="text-2xl font-bold mb-4">Why Your Website Isn't Ranking on Google (And How to Fix It)</h2>
-              <p className="mb-4">
-                You've invested time and resources into your website, but it's nowhere to be found on Google search results. 
-                This frustrating situation is common for many business owners and marketers.
-              </p>
-              <p className="mb-4">
-                In this article, we'll explore the most common reasons websites fail to rank on Google and provide 
-                actionable steps to fix these issues.
-              </p>
-              <h3 className="text-xl font-bold mt-6 mb-3">1. Your Website Is Too New</h3>
-              <p className="mb-4">
-                If you've recently launched your website, patience is key. Google typically takes time to index and 
-                rank new websites, a period often referred to as the "Google sandbox."
-              </p>
+          {/* Add author bio section */}
+          <div className="mt-16 p-6 border border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center flex-shrink-0 ${
+                isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+              }`}>
+                {post.fields.author?.fields?.avatar?.fields?.file?.url ? (
+                  <img 
+                    src={`https:${post.fields.author.fields.avatar.fields.file.url}`}
+                    alt={post.fields.author?.fields?.name || 'Author'}
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                ) : (
+                  <User size={32} className={isDarkMode ? 'text-gray-400' : 'text-gray-500'} />
+                )}
+              </div>
+              <div>
+                <h3 className={`text-xl font-bold mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>About the Author</h3>
+                <p className={`mb-3 ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  {post.fields.author?.fields?.name || 'Unknown Author'} is a digital marketing specialist with expertise in SEO, 
+                  content strategy, and website optimization.
+                </p>
+                <div className="flex gap-3">
+                  <a href="#" className={`text-sm font-medium ${
+                    isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
+                  }`}>Twitter</a>
+                  <a href="#" className={`text-sm font-medium ${
+                    isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
+                  }`}>LinkedIn</a>
+                  <a href="#" className={`text-sm font-medium ${
+                    isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
+                  }`}>Website</a>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
+          
+          {/* Add related articles section */}
+          <div className="mt-16">
+            <h2 className={`text-2xl font-bold mb-8 ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
+              You might also like
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className={`rounded-lg overflow-hidden border ${
+                isDarkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-100 bg-white'
+              } shadow-sm hover:shadow-md transition-shadow`}>
+                <div className="h-48 bg-gray-200 dark:bg-gray-800">
+                  {/* Placeholder for image */}
+                </div>
+                <div className="p-5">
+                  <h3 className={`text-lg font-bold mb-2 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>5 Essential SEO Tools Every Website Owner Should Use</h3>
+                  <p className={`text-sm mb-3 ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>Discover the must-have tools to improve your website's search engine visibility.</p>
+                  <Link to="/blog" className={`text-sm font-medium flex items-center ${
+                    isDarkMode ? 'text-blue-400' : 'text-blue-600'
+                  }`}>
+                    Read more <ArrowLeft size={14} className="ml-1 rotate-180" />
+                  </Link>
+                </div>
+              </div>
+              <div className={`rounded-lg overflow-hidden border ${
+                isDarkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-100 bg-white'
+              } shadow-sm hover:shadow-md transition-shadow`}>
+                <div className="h-48 bg-gray-200 dark:bg-gray-800">
+                  {/* Placeholder for image */}
+                </div>
+                <div className="p-5">
+                  <h3 className={`text-lg font-bold mb-2 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>How to Create Content That Ranks in 2023</h3>
+                  <p className={`text-sm mb-3 ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>Learn the latest strategies for creating high-ranking content in today's competitive landscape.</p>
+                  <Link to="/blog" className={`text-sm font-medium flex items-center ${
+                    isDarkMode ? 'text-blue-400' : 'text-blue-600'
+                  }`}>
+                    Read more <ArrowLeft size={14} className="ml-1 rotate-180" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Add newsletter signup */}
+          <div className="mt-16 p-8 border border-blue-100 dark:border-blue-900/30 rounded-lg bg-blue-50 dark:bg-blue-900/10">
+            <div className="text-center max-w-2xl mx-auto">
+              <h2 className={`text-xl sm:text-2xl font-bold mb-4 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>Get more SEO tips straight to your inbox</h2>
+              <p className={`mb-6 ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-700'
+              }`}>Sign up for my newsletter to receive exclusive tips and strategies to improve your website's ranking.</p>
+              <div className="flex flex-col sm:flex-row gap-3 items-center">
+                <input 
+                  type="email" 
+                  placeholder="Your email address" 
+                  className={`w-full py-3 px-4 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    isDarkMode 
+                      ? 'bg-gray-900 border-gray-700 text-white' 
+                      : 'bg-white border-gray-300 text-gray-800'
+                  }`}
+                />
+                <button 
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors w-full sm:w-auto"
+                >
+                  Subscribe
+                </button>
+              </div>
+              <p className={`text-xs mt-3 ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>I respect your privacy. Unsubscribe at any time.</p>
+            </div>
+          </div>
         </AnimatedSection>
       </article>
     </PageTransition>
