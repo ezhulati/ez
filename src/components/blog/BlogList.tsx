@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Calendar, Tag, Clock, ArrowRight, Search } from 'lucide-react';
+import { Calendar, Tag, Clock, ArrowRight, Search, AlertTriangle } from 'lucide-react';
 import { getBlogPosts, BlogPost } from '../../services/contentful';
 import AnimatedSection from '../AnimatedSection';
 import { useAppContext } from '../../context/AppContext';
@@ -12,6 +12,7 @@ const BlogList = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string>('');
   const { isDarkMode } = useAppContext();
   
   // Extract all unique categories from posts
@@ -21,11 +22,28 @@ const BlogList = () => {
     const fetchPosts = async () => {
       setIsLoading(true);
       try {
+        // Add debug information
+        setDebugInfo('Fetching posts...');
+        console.log('Fetching blog posts...');
+        
         const fetchedPosts = await getBlogPosts();
+        console.log('Fetched posts:', fetchedPosts);
+        setDebugInfo(prev => prev + `\nFetched ${fetchedPosts.length} posts`);
+        
+        if (fetchedPosts.length === 0) {
+          setDebugInfo(prev => prev + '\nNo posts found. Check Contentful setup.');
+        } else {
+          // Log the structure of the first post
+          const firstPost = fetchedPosts[0];
+          setDebugInfo(prev => prev + `\nFirst post: ${firstPost.fields.title}`);
+          console.log('First post:', firstPost);
+        }
+        
         setPosts(fetchedPosts);
       } catch (err) {
         console.error('Error fetching blog posts:', err);
         setError('Failed to load blog posts. Please try again later.');
+        setDebugInfo(prev => prev + `\nError: ${err instanceof Error ? err.message : 'Unknown error'}`);
       } finally {
         setIsLoading(false);
       }
@@ -70,12 +88,40 @@ const BlogList = () => {
           <p className="text-gray-600 dark:text-gray-300 mb-4">
             {error}
           </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 text-left whitespace-pre-wrap">
+            {debugInfo}
+          </p>
           <button 
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
           >
             Try again
           </button>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show empty state with debug info if no posts
+  if (posts.length === 0) {
+    return (
+      <div className="min-h-[400px] flex flex-col items-center justify-center py-12 px-4">
+        <div className="bg-yellow-50 dark:bg-yellow-900/30 p-6 rounded-lg border border-yellow-200 dark:border-yellow-800 max-w-lg">
+          <div className="flex items-start">
+            <AlertTriangle className="h-6 w-6 mr-3 mt-0.5 flex-shrink-0 text-yellow-600 dark:text-yellow-400" />
+            <div>
+              <h3 className="font-medium text-lg mb-2 text-yellow-800 dark:text-yellow-200">No blog posts found</h3>
+              <p className="mb-3 text-yellow-700 dark:text-yellow-300">
+                We couldn't find any blog posts in your Contentful space. Please check your Contentful setup.
+              </p>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono text-gray-700 dark:text-gray-300 mb-3 max-h-48 overflow-auto whitespace-pre-wrap">
+                {debugInfo || 'No debug information available'}
+              </div>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                Make sure you've created blog content in Contentful and that your API credentials are correct.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -200,10 +246,86 @@ const BlogPostCard = ({ post, index }: BlogPostCardProps) => {
     ? `https:${post.fields.image.fields.file.url}?fm=webp&w=600&h=400&fit=fill` 
     : `https://images.unsplash.com/photo-${1500000000000 + index}?fm=webp&w=600&h=400&fit=fill`;
   
-  // Estimate reading time
-  const content = post.fields.body || '';
-  const wordCount = content.split(/\s+/).length;
-  const readingTime = Math.max(1, Math.ceil(wordCount / 200));
+  // Get excerpt from excerpt field or from body field
+  const getExcerpt = () => {
+    if (post.fields.excerpt) return post.fields.excerpt;
+    
+    // If body is a string, extract first 150 characters
+    if (typeof post.fields.body === 'string') {
+      return post.fields.body.substring(0, 150) + '...';
+    }
+    
+    // If body is a RichText object, try to extract text from it
+    if (post.fields.body && typeof post.fields.body === 'object') {
+      try {
+        // Try to find the first paragraph with text
+        const content = post.fields.body as any;
+        if (content.content) {
+          for (const node of content.content) {
+            if (node.nodeType === 'paragraph' && node.content) {
+              const textParts = node.content
+                .filter((item: any) => item.nodeType === 'text')
+                .map((item: any) => item.value);
+              
+              if (textParts.length > 0) {
+                const text = textParts.join(' ');
+                return text.length > 150 ? text.substring(0, 150) + '...' : text;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.log('Error extracting excerpt from body:', e);
+      }
+    }
+    
+    return 'Read this article on our blog...';
+  };
+  
+  // Estimate reading time based on available content
+  const estimateReadingTime = () => {
+    let wordCount = 0;
+    
+    if (typeof post.fields.body === 'string') {
+      wordCount = post.fields.body.split(/\s+/).length;
+    } else if (post.fields.body && typeof post.fields.body === 'object') {
+      try {
+        // Try to count words in RichText object
+        const content = post.fields.body as any;
+        const countWordsInNode = (node: any): number => {
+          if (!node) return 0;
+          
+          if (node.nodeType === 'text' && node.value) {
+            return node.value.split(/\s+/).length;
+          }
+          
+          if (node.content && Array.isArray(node.content)) {
+            return node.content.reduce((sum: number, child: any) => sum + countWordsInNode(child), 0);
+          }
+          
+          return 0;
+        };
+        
+        wordCount = countWordsInNode(content);
+      } catch (e) {
+        console.log('Error counting words:', e);
+        wordCount = 500; // Default if we can't count
+      }
+    }
+    
+    return Math.max(1, Math.ceil(wordCount / 200));
+  };
+  
+  // Generate URL for blog post
+  const getPostUrl = () => {
+    if (post.fields.slug) {
+      return `/blog/${post.fields.slug}`;
+    }
+    return `/blog/${post.sys.id}`;
+  };
+  
+  const excerpt = getExcerpt();
+  const readingTime = estimateReadingTime();
   
   return (
     <AnimatedSection
@@ -212,7 +334,7 @@ const BlogPostCard = ({ post, index }: BlogPostCardProps) => {
       }`}
       delay={index * 0.1}
     >
-      <Link to={post.fields.slug ? `/blog/${post.fields.slug}` : `/blog/${post.sys.id}`} className="block h-full">
+      <Link to={getPostUrl()} className="block h-full">
         <div className="relative h-48 overflow-hidden">
           <img 
             src={imageUrl}
@@ -243,11 +365,11 @@ const BlogPostCard = ({ post, index }: BlogPostCardProps) => {
             {post.fields.title}
           </h3>
           
-          {post.fields.excerpt && (
+          {excerpt && (
             <p className={`mb-4 line-clamp-3 ${
               isDarkMode ? 'text-gray-300' : 'text-gray-600'
             }`}>
-              {post.fields.excerpt}
+              {excerpt}
             </p>
           )}
           

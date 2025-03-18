@@ -8,6 +8,103 @@ import { useAppContext } from '../../context/AppContext';
 import AnimatedSection from '../AnimatedSection';
 import PageTransition from '../PageTransition';
 
+// Function to convert Contentful RichText to Markdown (or extract plain text)
+const richTextToMarkdown = (richText: any): string => {
+  if (!richText || typeof richText !== 'object') {
+    return '';
+  }
+
+  try {
+    // If it's a node with content
+    if (richText.nodeType && richText.content) {
+      // Process different node types
+      if (richText.nodeType === 'document') {
+        return richText.content.map((node: any) => richTextToMarkdown(node)).join('\n\n');
+      }
+
+      if (richText.nodeType === 'paragraph') {
+        return richText.content.map((node: any) => richTextToMarkdown(node)).join('');
+      }
+
+      if (richText.nodeType === 'heading-1') {
+        return '# ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n\n';
+      }
+
+      if (richText.nodeType === 'heading-2') {
+        return '## ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n\n';
+      }
+
+      if (richText.nodeType === 'heading-3') {
+        return '### ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n\n';
+      }
+
+      if (richText.nodeType === 'heading-4') {
+        return '#### ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n\n';
+      }
+
+      if (richText.nodeType === 'heading-5') {
+        return '##### ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n\n';
+      }
+
+      if (richText.nodeType === 'heading-6') {
+        return '###### ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n\n';
+      }
+
+      if (richText.nodeType === 'unordered-list') {
+        return richText.content.map((node: any) => richTextToMarkdown(node)).join('\n') + '\n\n';
+      }
+
+      if (richText.nodeType === 'ordered-list') {
+        return richText.content.map((node: any, index: number) => {
+          // Prepend with index + 1 and period for ordered list
+          const listItem = richTextToMarkdown(node);
+          return `${index + 1}. ${listItem.trim()}`;
+        }).join('\n') + '\n\n';
+      }
+
+      if (richText.nodeType === 'list-item') {
+        return '- ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n';
+      }
+
+      if (richText.nodeType === 'blockquote') {
+        return '> ' + richText.content.map((node: any) => richTextToMarkdown(node)).join('') + '\n\n';
+      }
+
+      if (richText.nodeType === 'hr') {
+        return '---\n\n';
+      }
+
+      if (richText.nodeType === 'text') {
+        let text = richText.value || '';
+        
+        // Apply marks
+        if (richText.marks && richText.marks.length > 0) {
+          richText.marks.forEach((mark: any) => {
+            if (mark.type === 'bold') {
+              text = `**${text}**`;
+            } else if (mark.type === 'italic') {
+              text = `*${text}*`;
+            } else if (mark.type === 'underline') {
+              text = `<u>${text}</u>`;
+            } else if (mark.type === 'code') {
+              text = `\`${text}\``;
+            }
+          });
+        }
+        
+        return text;
+      }
+    }
+    
+    // Fallback for unsupported types
+    return '';
+    
+  } catch (error) {
+    console.error('Error parsing RichText:', error);
+    return '';
+  }
+};
+
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
   const [post, setPost] = useState<BlogPostType | null>(null);
@@ -87,6 +184,23 @@ const BlogPost = () => {
     } catch (error) {
       console.error('Error sharing:', error);
     }
+  };
+  
+  // Get content as markdown
+  const getContentMarkdown = () => {
+    if (!post) return '';
+    
+    // If body is a string, assume it's already markdown
+    if (typeof post.fields.body === 'string') {
+      return post.fields.body;
+    }
+    
+    // If body is RichText object, convert to markdown
+    if (post.fields.body && typeof post.fields.body === 'object') {
+      return richTextToMarkdown(post.fields.body);
+    }
+    
+    return '';
   };
   
   if (missingEnvVars) {
@@ -304,7 +418,7 @@ const BlogPost = () => {
             isDarkMode ? 'prose-invert' : ''
           } prose-headings:font-bold prose-a:text-blue-600 dark:prose-a:text-blue-400`}>
             <ReactMarkdown>
-              {post.fields.body || ''}
+              {getContentMarkdown()}
             </ReactMarkdown>
           </div>
         </AnimatedSection>
