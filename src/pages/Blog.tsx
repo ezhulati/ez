@@ -5,7 +5,6 @@ import { Book } from 'lucide-react';
 import AnimatedSection from '../components/AnimatedSection';
 import PageTransition from '../components/PageTransition';
 import { useAppContext } from '../context/AppContext';
-import PreviewModeToggle from '../components/blog/PreviewModeToggle';
 
 const Blog = () => {
   const location = useLocation();
@@ -79,9 +78,6 @@ const Blog = () => {
           <BlogList />
         </AnimatedSection>
       </div>
-      
-      {/* Preview Mode Toggle */}
-      <PreviewModeToggle />
     </PageTransition>
   );
 };
