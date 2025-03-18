@@ -11,7 +11,8 @@ import {
   getBlogPostBySlug, 
   getBlogPostById,
   BlogPost as BlogPostType, 
-  isPreviewModeActive 
+  isPreviewModeActive,
+  getBlogPostByCustomUrl
 } from '../../services/contentful';
 import { getPostSeoFields } from '../../services/contentfulSeo';
 import { useAppContext } from '../../context/AppContext';
@@ -131,7 +132,7 @@ const BlogPost = () => {
     }
     
     const fetchPost = async () => {
-      console.log('FETCHING POST WITH SLUG:', slug);
+      console.log('FETCHING POST WITH SLUG OR CUSTOM URL:', slug);
       setIsLoading(true);
       try {
         // Check if environment variables are set
@@ -142,13 +143,20 @@ const BlogPost = () => {
           return;
         }
         
-        // First try to fetch by slug
+        // Try in this order: slug, custom URL, ID
+        // 1. First try to fetch by slug
         console.log('TRYING TO FETCH BY SLUG:', slug);
         let fetchedPost = await getBlogPostBySlug(slug);
         
-        // If not found by slug, try by ID (in case the slug parameter is actually an ID)
+        // 2. If not found by slug, try by custom URL
         if (!fetchedPost) {
-          console.log(`POST NOT FOUND BY SLUG "${slug}", TRYING AS ID...`);
+          console.log(`POST NOT FOUND BY SLUG "${slug}", TRYING AS CUSTOM URL...`);
+          fetchedPost = await getBlogPostByCustomUrl(slug);
+        }
+        
+        // 3. If still not found, try by ID
+        if (!fetchedPost) {
+          console.log(`POST NOT FOUND BY CUSTOM URL "${slug}", TRYING AS ID...`);
           fetchedPost = await getBlogPostById(slug);
         }
         

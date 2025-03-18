@@ -10,6 +10,7 @@ export type BlogPost = {
   fields: {
     title: string;
     slug?: string;
+    customUrl?: string;
     image?: {
       fields: {
         file: {
@@ -176,6 +177,47 @@ export const getBlogPostById = async (id: string): Promise<BlogPost | null> => {
     return null;
   } catch (error) {
     console.error(`Error fetching blog post with ID ${id}:`, error);
+    return null;
+  }
+};
+
+/**
+ * Get a single blog post by custom URL
+ */
+export const getBlogPostByCustomUrl = async (customUrl: string): Promise<BlogPost | null> => {
+  try {
+    // Try with blogPage first
+    try {
+      const response = await getClient().getEntries({
+        content_type: 'blogPage',
+        'fields.customUrl': customUrl,
+        limit: 1,
+      });
+      
+      if (response.items.length > 0) {
+        console.log(`Blog post found by custom URL (blogPage): ${customUrl}`);
+        return response.items[0] as unknown as BlogPost;
+      }
+      
+      throw new Error('Not found with blogPage type');
+    } catch (error) {
+      // If that fails, try with blogPost
+      const response = await getClient().getEntries({
+        content_type: 'blogPost',
+        'fields.customUrl': customUrl,
+        limit: 1,
+      });
+      
+      if (response.items.length === 0) {
+        console.log(`Blog post not found with custom URL: ${customUrl}`);
+        return null;
+      }
+      
+      console.log(`Blog post found by custom URL (blogPost): ${customUrl}`);
+      return response.items[0] as unknown as BlogPost;
+    }
+  } catch (error) {
+    console.error(`Error fetching blog post with custom URL ${customUrl}:`, error);
     return null;
   }
 };
