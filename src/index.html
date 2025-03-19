@@ -1,27 +1,38 @@
 <!doctype html>
 <html lang="en" class="dark">
   <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-PRRRS3L42H"></script>
+    <!-- Google tag (gtag.js) - Optimized loading -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-PRRRS3L42H" fetchpriority="low"></script>
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-PRRRS3L42H');
+      window.addEventListener('load', function() {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-PRRRS3L42H', { 'send_page_view': false });
+        
+        // Delayed pageview to improve FCP and LCP
+        setTimeout(function() {
+          gtag('event', 'page_view');
+        }, 3000);
+      });
     </script>
     
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
-    <!-- Microsoft Clarity Analytics -->
+    <!-- Microsoft Clarity Analytics - Optimized loading -->
     <script type="text/javascript">
-        (function(c,l,a,r,i,t,y){
-            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-        })(window, document, "clarity", "script", "qlv8zx6uv2");
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                (function(c,l,a,r,i,t,y){
+                    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                    t.setAttribute('fetchpriority', 'low');
+                    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+                })(window, document, "clarity", "script", "qlv8zx6uv2");
+            }, 3000); // Delay clarity initialization by 3 seconds
+        });
     </script>
     
     <!-- SEO Meta Tags - Enhanced for AI and Search Engines -->
@@ -48,7 +59,7 @@
     <meta property="og:title" content="Growth Advisor - Web Development & Digital Strategy" />
     <meta property="og:description" content="Dallas-based web development and digital growth services that deliver measurable results. Custom websites, content creation, and SEO that help businesses get found online." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png" />
+    <meta property="og:image" content="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&fm=webp&w=1200&h=630&fit=crop" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:url" content="https://enrizhulati.com" />
@@ -95,11 +106,11 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon.svg" />
     
-    <!-- Dotlottie Player Script -->
-    <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
+    <!-- Dotlottie Player Script - Loaded with defer to avoid render blocking -->
+    <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module" defer fetchpriority="low"></script>
     
     <!-- Google Calendar API Script -->
-    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer fetchpriority="low"></script>
   </head>
   <body>
     <div id="root"></div>

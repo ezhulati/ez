@@ -76,12 +76,21 @@ const AboutMe = () => {
                 <div className="flex flex-col items-center text-center">
                   <div className="relative w-32 h-32 mb-4">
                     <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 blur opacity-60"></div>
-                    <img 
-                      src="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png" 
-                      alt="Enri Zhulati"
-                      className="relative w-32 h-32 rounded-full object-cover border-2 border-blue-400/30" 
-                      loading="eager"
-                    />
+                    <picture>
+                      <source 
+                        srcSet="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&fm=webp&w=128&h=128&fit=crop" 
+                        type="image/webp" 
+                      />
+                      <img 
+                        src="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&w=128&h=128&fit=crop" 
+                        alt="Enri Zhulati"
+                        className="relative w-32 h-32 rounded-full object-cover border-2 border-blue-400/30" 
+                        loading="eager"
+                        width="128"
+                        height="128"
+                        fetchPriority="high"
+                      />
+                    </picture>
                   </div>
                   
                   <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Enri Zhulati</h3>

@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense, ReactNode } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { ArrowRight, ExternalLink, ChevronDown, Sparkles, LineChart, Zap, Code, Calendar } from 'lucide-react';
 import { useAppContext } from './context/AppContext';
@@ -9,6 +9,12 @@ import PageTransition from './components/PageTransition';
 import SchemaMarkup from './SchemaMarkup';
 import MobileNavigation from './components/MobileNavigation';
 import BackToTop from './components/BackToTop';
+
+// Import icons individually to reduce bundle size 
+import { FileText } from 'lucide-react';
+import { Target } from 'lucide-react';
+import { Share2 } from 'lucide-react';
+import { Globe } from 'lucide-react';
 
 // Lazily loaded components for better performance
 const AnimatedSection = lazy(() => import('./components/AnimatedSection'));
@@ -21,9 +27,10 @@ const PricingModal = lazy(() => import('./components/PricingModal'));
 const ResultsDrawer = lazy(() => import('./components/ResultsDrawer'));
 const ScheduleModal = lazy(() => import('./components/ScheduleModal'));
 
-// Blog related pages
+// Blog related pages - loaded only when needed
 const Blog = lazy(() => import('./pages/Blog'));
 const BlogPost = lazy(() => import('./pages/BlogPost'));
+const Search = lazy(() => import('./pages/Search'));
 
 // Loading fallback for lazy components
 const ComponentLoader = () => (
@@ -96,14 +103,18 @@ function App() {
                 <a href="/" className="flex items-center space-x-2">
                   <div className="text-primary relative">
                     <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-sm"></div>
-                    <img 
-                      src="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png" 
-                      alt="Enri Zhulati" 
-                      className="h-8 w-8 rounded-full object-cover relative z-10 border border-blue-500/30"
-                      width="32"
-                      height="32"
-                      loading="eager"
-                    />
+                    <picture>
+                      <source srcSet="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&fm=webp&w=32&h=32&fit=crop" type="image/webp" />
+                      <img 
+                        src="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&w=32&h=32&fit=crop" 
+                        alt="Enri Zhulati" 
+                        className="h-8 w-8 rounded-full object-cover relative z-10 border border-blue-500/30"
+                        width="32"
+                        height="32"
+                        loading="eager"
+                        fetchPriority="high"
+                      />
+                    </picture>
                   </div>
                   <span className="font-bold text-xl">EZ</span>
                 </a>
@@ -176,6 +187,7 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/search" element={<Search />} />
             </Routes>
           </Suspense>
         </main>
@@ -193,7 +205,10 @@ function App() {
               <a href="/" className="flex items-center space-x-2 mb-6 md:mb-0">
                 <div className="relative">
                   <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-sm"></div>
-                  <img src="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png" alt="Enri Zhulati" className="h-8 w-8 rounded-full object-cover relative z-10 border border-blue-500/30" width="32" height="32" loading="lazy" />
+                  <picture>
+                    <source srcSet="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&fm=webp&w=32&h=32&fit=crop" type="image/webp" />
+                    <img src="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&w=32&h=32&fit=crop" alt="Enri Zhulati" className="h-8 w-8 rounded-full object-cover relative z-10 border border-blue-500/30" width="32" height="32" loading="lazy" />
+                  </picture>
                 </div>
                 <span className="font-semibold text-xl">Enri Zhulati</span>
               </a>

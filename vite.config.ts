@@ -1,9 +1,17 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    visualizer({
+      open: false,
+      gzipSize: true,
+      brotliSize: true
+    })
+  ],
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
@@ -12,7 +20,7 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
+        drop_console: false,
         drop_debugger: true,
       },
     },
@@ -20,17 +28,22 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          react: ['react', 'react-dom', 'react-router-dom'],
-          contentful: ['contentful'],
-          lucide: ['lucide-react'],
-          utils: ['date-fns', 'framer-motion', 'react-intersection-observer', 'react-markdown']
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-libs': ['framer-motion', 'lucide-react'],
+          'contentful': ['contentful'],
         }
       }
     },
     // Add source maps only in development
     sourcemap: process.env.NODE_ENV === 'development',
+    // Improve asset compression
+    reportCompressedSize: true,
     // Reduce chunk size
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 800,
+    // Generate modern code for modern browsers
+    target: 'es2020',
+    // Enable tree-shaking for CSS
+    cssCodeSplit: true,
   },
   // Optimize server options
   server: {
@@ -41,5 +54,6 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    port: 5173
   },
 });
