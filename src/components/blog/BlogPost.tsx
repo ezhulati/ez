@@ -737,8 +737,9 @@ const BlogPost = () => {
                 <p className={`${
                   isDarkMode ? 'text-gray-400' : 'text-gray-600'
                 } leading-relaxed`}>
-                  {post.fields.author?.fields?.name || (post.sys.id === '4teKNzPkzDPysbkdacG8D0' ? 'Enri Zhulati' : 'Unknown Author')} is a digital marketing specialist with expertise in SEO,
-                  content strategy, and website optimization.
+                  {post.fields.author?.fields?.bio || 
+                    `${post.fields.author?.fields?.name || (post.sys.id === '4teKNzPkzDPysbkdacG8D0' ? 'Enri Zhulati' : 'Unknown Author')} is a digital marketing specialist with expertise in SEO, content strategy, and website optimization.`
+                  }
                 </p>
                 <div className="flex gap-3 mt-3">
                   <a 

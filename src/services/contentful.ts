@@ -57,6 +57,7 @@ export type BlogPost = {
     author?: {
       fields: {
         name: string;
+        bio?: string;
         avatar?: {
           fields: {
             file: {
