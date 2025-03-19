@@ -64,12 +64,18 @@ const BlogSeo = ({ seoData }: BlogSeoProps) => {
       {seoData.ogImage && <meta property="og:image" content={seoData.ogImage} />}
       <meta property="og:url" content={seoData.canonicalUrl} />
       <meta property="og:site_name" content="Enri Zhulati" />
+      
+      {/* Additional Open Graph tags for better sharing */}
+      {seoData.ogImage && <meta property="og:image:width" content="1200" />}
+      {seoData.ogImage && <meta property="og:image:height" content="630" />}
+      <meta property="og:locale" content="en_US" />
 
       {/* Twitter */}
       <meta name="twitter:card" content={seoData.twitterCard} />
       <meta name="twitter:title" content={seoData.twitterTitle} />
       <meta name="twitter:description" content={seoData.excerpt || seoData.twitterDescription || seoData.description} />
       {seoData.twitterImage && <meta name="twitter:image" content={seoData.twitterImage} />}
+      <meta name="twitter:site" content="@enrizhulati" />
 
       {/* Schema.org / JSON-LD */}
       <script type="application/ld+json">

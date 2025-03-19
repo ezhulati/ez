@@ -253,14 +253,46 @@ const BlogPost = () => {
   const handleShare = async () => {
     try {
       if (navigator.share) {
-        await navigator.share({
-          title: post?.fields.title || 'Blog Post',
-          text: post?.fields.excerpt || '',
+        // Use SEO title and description if available
+        const shareTitle = post?.fields.seoTitle || post?.fields.title || 'Blog Post';
+        const shareText = post?.fields.seoDescription || post?.fields.excerpt || '';
+        
+        // Create the share object
+        const shareData: {
+          title: string;
+          text: string;
+          url: string;
+          files?: File[];
+        } = {
+          title: shareTitle,
+          text: shareText,
           url: window.location.href,
-        });
+        };
+        
+        // Try to include image if available (not all platforms support this)
+        if (post?.fields.image?.fields?.file?.url) {
+          try {
+            // Fetch the image and convert to a file for sharing
+            const imageUrl = `https:${post.fields.image.fields.file.url}`;
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+            const fileName = post.fields.image.fields.file.url.split('/').pop() || 'image.jpg';
+            const imageFile = new File([blob], fileName, { type: blob.type });
+            
+            // Only some browsers support sharing files
+            if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+              shareData.files = [imageFile];
+            }
+          } catch (err) {
+            console.warn('Failed to include image in share', err);
+          }
+        }
+        
+        await navigator.share(shareData);
       } else {
+        // Fallback to clipboard if Web Share API is not available
         navigator.clipboard.writeText(window.location.href);
-        alert('Link copied to clipboard!');
+        alert('Link copied to clipboard! Share this link for others to see your article with its title and featured image.');
       }
     } catch (error) {
       console.error('Error sharing:', error);
