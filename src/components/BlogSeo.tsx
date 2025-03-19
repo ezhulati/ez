@@ -31,8 +31,19 @@ interface BlogSeoProps {
   };
 }
 
-const BlogSeo = ({ seoData }: BlogSeoProps) => {
-  if (!seoData) return null;
+const BlogSeo = ({ seoData }: Partial<BlogSeoProps>) => {
+  // If no data is provided at all, render minimal SEO
+  if (!seoData) {
+    return (
+      <Helmet>
+        <title>Blog | Enri Zhulati</title>
+        <meta name="description" content="Read the latest articles and insights." />
+        <meta property="og:title" content="Blog | Enri Zhulati" />
+        <meta property="og:description" content="Read the latest articles and insights." />
+        <meta property="og:type" content="website" />
+      </Helmet>
+    );
+  }
   
   // Generate structured data for Schema.org
   const schemaData = {
@@ -69,6 +80,10 @@ const BlogSeo = ({ seoData }: BlogSeoProps) => {
       {seoData.ogImage && <meta property="og:image:width" content="1200" />}
       {seoData.ogImage && <meta property="og:image:height" content="630" />}
       <meta property="og:locale" content="en_US" />
+      <meta property="article:published_time" content={seoData.publishDate} />
+      <meta property="article:modified_time" content={seoData.modifiedDate} />
+      <meta property="article:author" content={seoData.authorName} />
+      {seoData.keywords && <meta property="article:tag" content={seoData.keywords} />}
 
       {/* Twitter */}
       <meta name="twitter:card" content={seoData.twitterCard} />
@@ -76,6 +91,7 @@ const BlogSeo = ({ seoData }: BlogSeoProps) => {
       <meta name="twitter:description" content={seoData.excerpt || seoData.twitterDescription || seoData.description} />
       {seoData.twitterImage && <meta name="twitter:image" content={seoData.twitterImage} />}
       <meta name="twitter:site" content="@enrizhulati" />
+      <meta name="twitter:creator" content="@enrizhulati" />
 
       {/* Schema.org / JSON-LD */}
       <script type="application/ld+json">

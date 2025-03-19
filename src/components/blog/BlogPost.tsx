@@ -169,9 +169,17 @@ const BlogPost = () => {
           });
           
           // Fetch SEO data
-          const seo = await getPostSeoFields(slug || '');
-          setSeoData(seo);
-          console.log('SEO DATA LOADED:', seo);
+          try {
+            const seo = await getPostSeoFields(slug || '');
+            console.log('SEO DATA LOADED:', seo);
+            if (seo) {
+              setSeoData(seo);
+            } else {
+              console.error('Failed to load SEO data for:', slug);
+            }
+          } catch (seoError) {
+            console.error('Error loading SEO data:', seoError);
+          }
           
           // Create raw HTML version for direct rendering fallback
           if (typeof fetchedPost.fields.body === 'string') {
@@ -444,8 +452,30 @@ const BlogPost = () => {
   
   return (
     <PageTransition>
-      {/* Add SEO metadata */}
-      {seoData && <BlogSeo seoData={seoData} />}
+      {/* Add SEO metadata - always rendering the component, even with minimal data */}
+      <BlogSeo seoData={seoData || {
+        title: post?.fields.title || 'Blog Post',
+        description: post?.fields.excerpt || '',
+        excerpt: post?.fields.excerpt || '',
+        keywords: post?.fields.categories?.join(', ') || '',
+        canonicalUrl: window.location.href,
+        ogTitle: post?.fields.title || 'Blog Post',
+        ogDescription: post?.fields.excerpt || '',
+        ogImage: post?.fields.image?.fields?.file?.url 
+          ? `https:${post?.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
+          : null,
+        ogType: 'article',
+        twitterCard: 'summary_large_image',
+        twitterTitle: post?.fields.title || 'Blog Post',
+        twitterDescription: post?.fields.excerpt || '',
+        twitterImage: post?.fields.image?.fields?.file?.url 
+          ? `https:${post?.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
+          : null,
+        schemaType: 'BlogPosting',
+        publishDate: post?.fields.publishedDate || post?.sys.createdAt || new Date().toISOString(),
+        modifiedDate: post?.sys.updatedAt || new Date().toISOString(),
+        authorName: post?.fields.author?.fields?.name || 'Enri Zhulati',
+      }} />
       
       <article className="max-w-4xl mx-auto px-4 py-12 pt-16 lg:pt-28">
         {/* Back link with improved styling */}

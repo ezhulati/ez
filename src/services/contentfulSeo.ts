@@ -28,7 +28,7 @@ export const getPostSeoFields = async (identifier: string) => {
     description: post.fields.seoDescription || post.fields.excerpt || '',
     excerpt: post.fields.excerpt || '',
     keywords: post.fields.categories?.join(', ') || '',
-    canonicalUrl: `${window.location.origin}/blog/${post.fields.customUrl || post.fields.slug || ''}`,
+    canonicalUrl: `${window.location.origin}/blog/${post.fields.customUrl || post.fields.slug || post.sys.id || ''}`,
     
     // Open Graph
     ogTitle: post.fields.seoTitle || post.fields.title || '',
