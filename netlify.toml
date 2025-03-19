@@ -32,3 +32,10 @@
   pretty_urls = true
 [build.processing.images]
   compress = true
+
+[[edge_functions]]
+  path = "/blog/*"
+  function = "social-metadata"
+
+[dev]
+  framework = "vite"
