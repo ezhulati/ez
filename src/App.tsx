@@ -10,20 +10,17 @@ import SchemaMarkup from './SchemaMarkup';
 import MobileNavigation from './components/MobileNavigation';
 import BackToTop from './components/BackToTop';
 
-// Add lottie-player type definition
+// Add dotlottie-player type definition
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      'lottie-player': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+      'dotlottie-player': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         src?: string;
         autoplay?: boolean;
         loop?: boolean;
         style?: React.CSSProperties;
         background?: string;
         speed?: string;
-        mode?: string;
-        hover?: boolean;
-        renderer?: string;
       };
     }
   }
@@ -87,13 +84,14 @@ function App() {
   // Google Calendar client ID
   const googleCalendarClientId = "263378139761-b6ftm7f3qvf7meo3t4mdgk35lskkj442.apps.googleusercontent.com";
 
-  // Ensure lottie-player is loaded
+  // Ensure dotlottie-player is loaded
   useEffect(() => {
-    if (!customElements.get('lottie-player')) {
+    if (!customElements.get('dotlottie-player')) {
       const script = document.createElement('script');
-      script.src = 'https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js';
+      script.src = 'https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs';
+      script.type = 'module';
       script.onload = () => {
-        console.log('Lottie Player loaded dynamically');
+        console.log('DotLottie Player loaded dynamically');
       };
       document.head.appendChild(script);
     }
@@ -359,14 +357,14 @@ const HomePage = () => {
                 <div className="relative w-full max-w-md">
                   <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/30 to-indigo-500/30 rounded-3xl blur-2xl"></div>
                   <div className="relative bg-gray-800/40 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden border border-gray-700/50">
-                    <lottie-player
-                      src="https://assets3.lottiefiles.com/packages/lf20_UJNc2t.json"
+                    <dotlottie-player
+                      src="https://lottie.host/d24b0dec-833f-4259-8bf9-6b911b174645/P4CRRzGREn.lottie"
                       background="transparent"
                       speed="1"
                       style={{ width: '100%', height: '400px', borderRadius: '16px' }}
                       loop
                       autoplay
-                    ></lottie-player>
+                    ></dotlottie-player>
                   </div>
                 </div>
               </AnimatedSection>
