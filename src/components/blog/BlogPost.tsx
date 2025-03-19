@@ -81,6 +81,7 @@ const BlogPost = () => {
   const [useAlternateRendering, setUseAlternateRendering] = useState(false);
   const [rawHtml, setRawHtml] = useState<string>('');
   const [seoData, setSeoData] = useState<any>(null);
+  const [recommendedPosts, setRecommendedPosts] = useState<BlogPostType[]>([]);
   const { isDarkMode } = useAppContext();
   const isPreview = isPreviewModeActive();
   
@@ -165,7 +166,8 @@ const BlogPost = () => {
             id: fetchedPost.sys?.id,
             title: fetchedPost.fields?.title,
             bodyType: typeof fetchedPost.fields.body,
-            hasBody: !!fetchedPost.fields.body
+            hasBody: !!fetchedPost.fields.body,
+            hasRecommendedPosts: !!fetchedPost.fields.recommendedPosts
           });
           
           // Fetch SEO data
@@ -200,6 +202,44 @@ const BlogPost = () => {
               console.error('ERROR CREATING RAW HTML:', err);
               setRawHtml(`<p>Error rendering content: ${err?.message || 'Unknown error'}</p>`);
             }
+          }
+          
+          // Fetch recommended posts if available
+          if (fetchedPost.fields.recommendedPosts && fetchedPost.fields.recommendedPosts.length > 0) {
+            try {
+              // Extract post entries from the references
+              const recommendedPostEntries = fetchedPost.fields.recommendedPosts;
+              console.log('RECOMMENDED POSTS:', recommendedPostEntries);
+              
+              // If they are already resolved entries, use them directly
+              if (recommendedPostEntries[0] && 
+                  (recommendedPostEntries[0].fields || recommendedPostEntries[0].sys)) {
+                setRecommendedPosts(recommendedPostEntries as unknown as BlogPostType[]);
+              } 
+              // Otherwise, they might be just IDs or links that need to be resolved
+              else {
+                const resolvedPosts = await Promise.all(
+                  recommendedPostEntries.map(async (entry: any) => {
+                    // If it's a reference with an ID
+                    if (entry.sys && entry.sys.id) {
+                      return await getBlogPostById(entry.sys.id);
+                    }
+                    // If it's just an ID string
+                    else if (typeof entry === 'string') {
+                      return await getBlogPostById(entry);
+                    }
+                    return null;
+                  })
+                );
+                
+                // Filter out any null values and set the state
+                setRecommendedPosts(resolvedPosts.filter(Boolean) as BlogPostType[]);
+              }
+            } catch (err) {
+              console.error('ERROR FETCHING RECOMMENDED POSTS:', err);
+            }
+          } else {
+            console.log('NO RECOMMENDED POSTS FOUND');
           }
         } else {
           console.error(`BLOG POST NOT FOUND WITH SLUG/ID: ${slug}`);
@@ -372,6 +412,51 @@ const BlogPost = () => {
         <p className="text-yellow-700 dark:text-yellow-400">
           The content format is not recognized.
         </p>
+      </div>
+    );
+  };
+  
+  // Render recommended post card
+  const renderRecommendedPostCard = (recommendedPost: BlogPostType) => {
+    // Get featured image URL or use a placeholder
+    const featuredImageUrl = recommendedPost.fields.featuredImage?.fields?.file?.url 
+      ? `https:${recommendedPost.fields.featuredImage.fields.file.url}?fm=webp&w=600&h=300&fit=fill`
+      : recommendedPost.fields.image?.fields?.file?.url 
+        ? `https:${recommendedPost.fields.image.fields.file.url}?fm=webp&w=600&h=300&fit=fill`
+        : 'https://images.unsplash.com/photo-1519681393784-d120267933ba?fm=webp&w=600&h=300&fit=fill';
+    
+    // Get the post slug or id for the link
+    const postLink = recommendedPost.fields.slug 
+      ? `/blog/${recommendedPost.fields.slug}` 
+      : recommendedPost.fields.customUrl 
+        ? `/blog/${recommendedPost.fields.customUrl}`
+        : `/blog/${recommendedPost.sys.id}`;
+    
+    return (
+      <div key={recommendedPost.sys.id} className={`rounded-lg overflow-hidden border ${
+        isDarkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-100 bg-white'
+      } shadow-sm hover:shadow-md transition-shadow`}>
+        <div className="h-48 bg-gray-200 dark:bg-gray-800 overflow-hidden">
+          <img 
+            src={featuredImageUrl} 
+            alt={recommendedPost.fields.title}
+            className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+          />
+        </div>
+        <div className="p-5">
+          <h3 className={`text-lg font-bold mb-2 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>{recommendedPost.fields.title}</h3>
+          <p className={`text-sm mb-3 ${
+            isDarkMode ? 'text-gray-400' : 'text-gray-500'
+          }`}>{recommendedPost.fields.excerpt || ''}</p>
+          <Link to={postLink} className={`text-sm font-medium flex items-center ${
+            isDarkMode ? 'text-blue-400' : 'text-blue-600'
+          }`}>
+            Read more <ArrowLeft size={14} className="ml-1 rotate-180" />
+          </Link>
+        </div>
       </div>
     );
   };
@@ -666,56 +751,66 @@ const BlogPost = () => {
             </div>
           </div>
           
-          {/* Add related articles section */}
-          <div className="mt-16">
-            <h2 className={`text-2xl font-bold mb-8 ${
-              isDarkMode ? 'text-white' : 'text-gray-900'
-            }`}>
-              You might also like
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className={`rounded-lg overflow-hidden border ${
-                isDarkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-100 bg-white'
-              } shadow-sm hover:shadow-md transition-shadow`}>
-                <div className="h-48 bg-gray-200 dark:bg-gray-800">
-                  {/* Placeholder for image */}
-                </div>
-                <div className="p-5">
-                  <h3 className={`text-lg font-bold mb-2 ${
-                    isDarkMode ? 'text-white' : 'text-gray-900'
-                  }`}>5 Essential SEO Tools Every Website Owner Should Use</h3>
-                  <p className={`text-sm mb-3 ${
-                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                  }`}>Discover the must-have tools to improve your website's search engine visibility.</p>
-                  <Link to="/blog" className={`text-sm font-medium flex items-center ${
-                    isDarkMode ? 'text-blue-400' : 'text-blue-600'
-                  }`}>
-                    Read more <ArrowLeft size={14} className="ml-1 rotate-180" />
-                  </Link>
-                </div>
-              </div>
-              <div className={`rounded-lg overflow-hidden border ${
-                isDarkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-100 bg-white'
-              } shadow-sm hover:shadow-md transition-shadow`}>
-                <div className="h-48 bg-gray-200 dark:bg-gray-800">
-                  {/* Placeholder for image */}
-                </div>
-                <div className="p-5">
-                  <h3 className={`text-lg font-bold mb-2 ${
-                    isDarkMode ? 'text-white' : 'text-gray-900'
-                  }`}>How to Create Content That Ranks in 2023</h3>
-                  <p className={`text-sm mb-3 ${
-                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                  }`}>Learn the latest strategies for creating high-ranking content in today's competitive landscape.</p>
-                  <Link to="/blog" className={`text-sm font-medium flex items-center ${
-                    isDarkMode ? 'text-blue-400' : 'text-blue-600'
-                  }`}>
-                    Read more <ArrowLeft size={14} className="ml-1 rotate-180" />
-                  </Link>
-                </div>
+          {/* Recommended articles section */}
+          {(recommendedPosts.length > 0 || !post) && (
+            <div className="mt-16">
+              <h2 className={`text-2xl font-bold mb-8 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                You might also like
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {recommendedPosts.length > 0 ? (
+                  // Display actual recommended posts
+                  recommendedPosts.map((recommendedPost) => renderRecommendedPostCard(recommendedPost))
+                ) : (
+                  // Fallback to default recommendations if there are no recommended posts
+                  <>
+                    <div className={`rounded-lg overflow-hidden border ${
+                      isDarkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-100 bg-white'
+                    } shadow-sm hover:shadow-md transition-shadow`}>
+                      <div className="h-48 bg-gray-200 dark:bg-gray-800">
+                        {/* Placeholder for image */}
+                      </div>
+                      <div className="p-5">
+                        <h3 className={`text-lg font-bold mb-2 ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>5 Essential SEO Tools Every Website Owner Should Use</h3>
+                        <p className={`text-sm mb-3 ${
+                          isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                        }`}>Discover the must-have tools to improve your website's search engine visibility.</p>
+                        <Link to="/blog" className={`text-sm font-medium flex items-center ${
+                          isDarkMode ? 'text-blue-400' : 'text-blue-600'
+                        }`}>
+                          Read more <ArrowLeft size={14} className="ml-1 rotate-180" />
+                        </Link>
+                      </div>
+                    </div>
+                    <div className={`rounded-lg overflow-hidden border ${
+                      isDarkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-100 bg-white'
+                    } shadow-sm hover:shadow-md transition-shadow`}>
+                      <div className="h-48 bg-gray-200 dark:bg-gray-800">
+                        {/* Placeholder for image */}
+                      </div>
+                      <div className="p-5">
+                        <h3 className={`text-lg font-bold mb-2 ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>How to Create Content That Ranks in 2023</h3>
+                        <p className={`text-sm mb-3 ${
+                          isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                        }`}>Learn the latest strategies for creating high-ranking content in today's competitive landscape.</p>
+                        <Link to="/blog" className={`text-sm font-medium flex items-center ${
+                          isDarkMode ? 'text-blue-400' : 'text-blue-600'
+                        }`}>
+                          Read more <ArrowLeft size={14} className="ml-1 rotate-180" />
+                        </Link>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
-          </div>
+          )}
           
           {/* Add newsletter signup */}
           <div className="mt-16 p-8 border border-blue-100 dark:border-blue-900/30 rounded-lg bg-blue-50 dark:bg-blue-900/10">
