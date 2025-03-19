@@ -8,25 +8,15 @@ export default defineConfig({
     react(),
     visualizer({
       gzipSize: true,
-      brotliSize: true,
       open: false,
     }),
   ],
   
   build: {
-    // Target modern browsers for smaller bundles
-    target: 'es2020',
-    
-    // Enable minification with terser
-    minify: 'terser',
-    
-    // Break up chunks for better caching
     rollupOptions: {
       output: {
         manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-libs': ['framer-motion', 'lucide-react'],
-          'contentful': ['contentful'],
+          'vendor': ['react', 'react-dom', 'react-router-dom'],
         }
       }
     },
