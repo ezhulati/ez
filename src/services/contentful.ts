@@ -11,10 +11,24 @@ export type BlogPost = {
     title: string;
     slug?: string;
     customUrl?: string;
-    seoTitle?: string;
-    seoDescription?: string;
+    metaTitle?: string;
+    metaDescription?: string;
     introHook?: string;
     image?: {
+      fields: {
+        file: {
+          url: string;
+          details: {
+            image: {
+              width: number;
+              height: number;
+            };
+          };
+        };
+        title: string;
+      };
+    };
+    featuredImage?: {
       fields: {
         file: {
           url: string;
@@ -32,6 +46,14 @@ export type BlogPost = {
     body?: string;
     recommendedPosts?: any[];
     categories?: string[];
+    seoKeywords?: string[];
+    ogTitle?: string;
+    ogDescription?: string;
+    twitterCardType?: string;
+    canonicalUrl?: string;
+    articlePublishDate?: string;
+    articleModifiedDate?: string;
+    schemaType?: string;
     author?: {
       fields: {
         name: string;

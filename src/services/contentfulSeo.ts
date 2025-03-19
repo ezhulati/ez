@@ -24,32 +24,36 @@ export const getPostSeoFields = async (identifier: string) => {
   
   return {
     // Basic SEO
-    title: post.fields.seoTitle || post.fields.title || '',
-    description: post.fields.seoDescription || post.fields.excerpt || '',
+    title: post.fields.metaTitle || post.fields.title || '',
+    description: post.fields.metaDescription || post.fields.excerpt || '',
     excerpt: post.fields.excerpt || '',
-    keywords: post.fields.categories?.join(', ') || '',
-    canonicalUrl: `${window.location.origin}/blog/${post.fields.customUrl || post.fields.slug || post.sys.id || ''}`,
+    keywords: post.fields.seoKeywords?.join(', ') || post.fields.categories?.join(', ') || '',
+    canonicalUrl: post.fields.canonicalUrl || `${window.location.origin}/blog/${post.fields.customUrl || post.fields.slug || post.sys.id || ''}`,
     
     // Open Graph
-    ogTitle: post.fields.seoTitle || post.fields.title || '',
-    ogDescription: post.fields.seoDescription || post.fields.excerpt || '',
-    ogImage: post.fields.image?.fields?.file?.url 
-      ? `https:${post.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
-      : null,
+    ogTitle: post.fields.ogTitle || post.fields.metaTitle || post.fields.title || '',
+    ogDescription: post.fields.ogDescription || post.fields.metaDescription || post.fields.excerpt || '',
+    ogImage: post.fields.featuredImage?.fields?.file?.url 
+      ? `https:${post.fields.featuredImage.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
+      : post.fields.image?.fields?.file?.url 
+        ? `https:${post.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
+        : null,
     ogType: 'article',
     
     // Twitter
-    twitterCard: 'summary_large_image',
-    twitterTitle: post.fields.seoTitle || post.fields.title || '',
-    twitterDescription: post.fields.seoDescription || post.fields.excerpt || '',
-    twitterImage: post.fields.image?.fields?.file?.url 
-      ? `https:${post.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
-      : null,
+    twitterCard: post.fields.twitterCardType || 'summary_large_image',
+    twitterTitle: post.fields.ogTitle || post.fields.metaTitle || post.fields.title || '',
+    twitterDescription: post.fields.ogDescription || post.fields.metaDescription || post.fields.excerpt || '',
+    twitterImage: post.fields.featuredImage?.fields?.file?.url 
+      ? `https:${post.fields.featuredImage.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
+      : post.fields.image?.fields?.file?.url 
+        ? `https:${post.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
+        : null,
     
     // Schema.org
-    schemaType: 'BlogPosting',
-    publishDate: post.fields.publishedDate || post.sys.createdAt,
-    modifiedDate: post.sys.updatedAt,
+    schemaType: post.fields.schemaType || 'BlogPosting',
+    publishDate: post.fields.articlePublishDate || post.fields.publishedDate || post.sys.createdAt,
+    modifiedDate: post.fields.articleModifiedDate || post.sys.updatedAt,
     authorName: post.fields.author?.fields?.name || (post.sys.id === '4teKNzPkzDPysbkdacG8D0' ? 'Enri Zhulati' : 'Unknown Author'),
   };
 };

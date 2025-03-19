@@ -262,8 +262,8 @@ const BlogPost = () => {
     try {
       if (navigator.share) {
         // Use SEO title and description if available
-        const shareTitle = post?.fields.seoTitle || post?.fields.title || 'Blog Post';
-        const shareText = post?.fields.seoDescription || post?.fields.excerpt || '';
+        const shareTitle = post?.fields.metaTitle || post?.fields.ogTitle || post?.fields.title || 'Blog Post';
+        const shareText = post?.fields.metaDescription || post?.fields.ogDescription || post?.fields.excerpt || '';
         
         // Create the share object
         const shareData: {
@@ -278,13 +278,14 @@ const BlogPost = () => {
         };
         
         // Try to include image if available (not all platforms support this)
-        if (post?.fields.image?.fields?.file?.url) {
+        const imageField = post?.fields.featuredImage || post?.fields.image;
+        if (imageField?.fields?.file?.url) {
           try {
             // Fetch the image and convert to a file for sharing
-            const imageUrl = `https:${post.fields.image.fields.file.url}`;
+            const imageUrl = `https:${imageField.fields.file.url}`;
             const response = await fetch(imageUrl);
             const blob = await response.blob();
-            const fileName = post.fields.image.fields.file.url.split('/').pop() || 'image.jpg';
+            const fileName = imageField.fields.file.url.split('/').pop() || 'image.jpg';
             const imageFile = new File([blob], fileName, { type: blob.type });
             
             // Only some browsers support sharing files
@@ -441,9 +442,11 @@ const BlogPost = () => {
     : format(new Date(post.sys.createdAt), 'MMMM d, yyyy');
   
   // Get image URL or use a placeholder
-  const featuredImageUrl = post.fields.image?.fields?.file?.url 
-    ? `https:${post.fields.image.fields.file.url}?fm=webp&w=1200&h=600&fit=fill`
-    : 'https://images.unsplash.com/photo-1519681393784-d120267933ba?fm=webp&w=1200&h=600&fit=fill';
+  const featuredImageUrl = post.fields.featuredImage?.fields?.file?.url 
+    ? `https:${post.fields.featuredImage.fields.file.url}?fm=webp&w=1200&h=600&fit=fill`
+    : post.fields.image?.fields?.file?.url 
+      ? `https:${post.fields.image.fields.file.url}?fm=webp&w=1200&h=600&fit=fill`
+      : 'https://images.unsplash.com/photo-1519681393784-d120267933ba?fm=webp&w=1200&h=600&fit=fill';
   
   // Determine reading time (rough estimate based on word count)
   const content = post.fields.body || '';
@@ -454,26 +457,30 @@ const BlogPost = () => {
     <PageTransition>
       {/* Add SEO metadata - always rendering the component, even with minimal data */}
       <BlogSeo seoData={seoData || {
-        title: post?.fields.title || 'Blog Post',
-        description: post?.fields.excerpt || '',
+        title: post?.fields.metaTitle || post?.fields.title || 'Blog Post',
+        description: post?.fields.metaDescription || post?.fields.excerpt || '',
         excerpt: post?.fields.excerpt || '',
-        keywords: post?.fields.categories?.join(', ') || '',
-        canonicalUrl: window.location.href,
-        ogTitle: post?.fields.title || 'Blog Post',
-        ogDescription: post?.fields.excerpt || '',
-        ogImage: post?.fields.image?.fields?.file?.url 
-          ? `https:${post?.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
-          : null,
+        keywords: post?.fields.seoKeywords?.join(', ') || post?.fields.categories?.join(', ') || '',
+        canonicalUrl: post?.fields.canonicalUrl || window.location.href,
+        ogTitle: post?.fields.ogTitle || post?.fields.metaTitle || post?.fields.title || 'Blog Post',
+        ogDescription: post?.fields.ogDescription || post?.fields.metaDescription || post?.fields.excerpt || '',
+        ogImage: post?.fields.featuredImage?.fields?.file?.url 
+          ? `https:${post?.fields.featuredImage.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
+          : post?.fields.image?.fields?.file?.url 
+            ? `https:${post?.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
+            : null,
         ogType: 'article',
-        twitterCard: 'summary_large_image',
-        twitterTitle: post?.fields.title || 'Blog Post',
-        twitterDescription: post?.fields.excerpt || '',
-        twitterImage: post?.fields.image?.fields?.file?.url 
-          ? `https:${post?.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
-          : null,
-        schemaType: 'BlogPosting',
-        publishDate: post?.fields.publishedDate || post?.sys.createdAt || new Date().toISOString(),
-        modifiedDate: post?.sys.updatedAt || new Date().toISOString(),
+        twitterCard: post?.fields.twitterCardType || 'summary_large_image',
+        twitterTitle: post?.fields.ogTitle || post?.fields.metaTitle || post?.fields.title || 'Blog Post',
+        twitterDescription: post?.fields.ogDescription || post?.fields.metaDescription || post?.fields.excerpt || '',
+        twitterImage: post?.fields.featuredImage?.fields?.file?.url 
+          ? `https:${post?.fields.featuredImage.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
+          : post?.fields.image?.fields?.file?.url 
+            ? `https:${post?.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill`
+            : null,
+        schemaType: post?.fields.schemaType || 'BlogPosting',
+        publishDate: post?.fields.articlePublishDate || post?.fields.publishedDate || post?.sys.createdAt || new Date().toISOString(),
+        modifiedDate: post?.fields.articleModifiedDate || post?.sys.updatedAt || new Date().toISOString(),
         authorName: post?.fields.author?.fields?.name || 'Enri Zhulati',
       }} />
       
