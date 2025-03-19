@@ -2,6 +2,7 @@
 node_modules
 .pnp
 .pnp.js
+package-lock.json
 
 # Testing
 coverage
@@ -18,6 +19,7 @@ build
 .env.test.local
 .env.production.local
 .env*.local
+stats.html
 
 # Logs
 npm-debug.log*
