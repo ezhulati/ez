@@ -11,6 +11,8 @@ export type BlogPost = {
     title: string;
     slug?: string;
     customUrl?: string;
+    seoTitle?: string;
+    seoDescription?: string;
     image?: {
       fields: {
         file: {

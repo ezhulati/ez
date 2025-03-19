@@ -24,15 +24,15 @@ export const getPostSeoFields = async (identifier: string) => {
   
   return {
     // Basic SEO
-    title: post.fields.title || '',
-    description: post.fields.excerpt || '',
+    title: post.fields.seoTitle || post.fields.title || '',
+    description: post.fields.seoDescription || post.fields.excerpt || '',
     excerpt: post.fields.excerpt || '',
     keywords: post.fields.categories?.join(', ') || '',
     canonicalUrl: `${window.location.origin}/blog/${post.fields.customUrl || post.fields.slug || ''}`,
     
     // Open Graph
-    ogTitle: post.fields.title || '',
-    ogDescription: post.fields.excerpt || '',
+    ogTitle: post.fields.seoTitle || post.fields.title || '',
+    ogDescription: post.fields.seoDescription || post.fields.excerpt || '',
     ogImage: post.fields.image?.fields?.file?.url 
       ? `https:${post.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
       : null,
@@ -40,8 +40,8 @@ export const getPostSeoFields = async (identifier: string) => {
     
     // Twitter
     twitterCard: 'summary_large_image',
-    twitterTitle: post.fields.title || '',
-    twitterDescription: post.fields.excerpt || '',
+    twitterTitle: post.fields.seoTitle || post.fields.title || '',
+    twitterDescription: post.fields.seoDescription || post.fields.excerpt || '',
     twitterImage: post.fields.image?.fields?.file?.url 
       ? `https:${post.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
       : null,

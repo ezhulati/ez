@@ -2,22 +2,31 @@ import { Helmet } from 'react-helmet-async';
 
 interface BlogSeoProps {
   seoData: {
-    title: string;
-    description: string;
+    // Basic SEO (prioritizes seoTitle from Contentful)
+    title: string;       // Uses seoTitle field, or falls back to standard title
+    description: string; // Uses seoDescription field, or falls back to excerpt
     keywords: string;
     canonicalUrl: string;
-    ogTitle: string;
-    ogDescription: string;
+    
+    // Open Graph / Facebook
+    ogTitle: string;        // Uses seoTitle or title
+    ogDescription: string;  // Uses seoDescription or excerpt
     ogImage: string | null;
     ogType: string;
+    
+    // Twitter Card
     twitterCard: string;
-    twitterTitle: string;
-    twitterDescription: string;
+    twitterTitle: string;        // Uses seoTitle or title
+    twitterDescription: string;  // Uses seoDescription or excerpt
     twitterImage: string | null;
+    
+    // Schema.org data
     schemaType: string;
     publishDate: string;
     modifiedDate: string;
     authorName: string;
+    
+    // Content
     excerpt: string;
   };
 }
