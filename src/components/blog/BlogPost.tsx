@@ -465,14 +465,17 @@ const BlogPost = () => {
               {post.fields.author?.fields?.avatar?.fields?.file?.url ? (
                 <img 
                   src={`https:${post.fields.author.fields.avatar.fields.file.url}`}
-                  alt={post.fields.author.fields.name}
-                  className="w-9 h-9 rounded-full mr-2.5 object-cover border-2 border-white dark:border-gray-800 shadow-sm"
+                  alt={post.fields.author.fields.name || 'Author'}
+                  className="w-10 h-10 rounded-full mr-3 object-cover border-2 border-white dark:border-gray-800 shadow-md"
+                  width="40"
+                  height="40"
+                  loading="eager"
                 />
               ) : (
-                <div className={`w-9 h-9 rounded-full mr-2.5 flex items-center justify-center ${
+                <div className={`w-10 h-10 rounded-full mr-3 flex items-center justify-center ${
                   isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
                 }`}>
-                  <User size={18} className={isDarkMode ? 'text-gray-400' : 'text-gray-500'} />
+                  <User size={20} className={isDarkMode ? 'text-gray-400' : 'text-gray-500'} />
                 </div>
               )}
               <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -544,14 +547,17 @@ const BlogPost = () => {
           {/* Add author bio section */}
           <div className="mt-16 p-6 border border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-              <div className={`w-20 h-20 rounded-full flex items-center justify-center flex-shrink-0 ${
-                isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border-4 ${
+                isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-200 border-gray-100'
               }`}>
                 {post.fields.author?.fields?.avatar?.fields?.file?.url ? (
                   <img 
-                    src={`https:${post.fields.author.fields.avatar.fields.file.url}`}
+                    src={`https:${post.fields.author.fields.avatar.fields.file.url}?fm=webp&w=160&h=160&fit=fill`}
                     alt={post.fields.author?.fields?.name || 'Author'}
-                    className="w-full h-full rounded-full object-cover"
+                    className="w-full h-full object-cover"
+                    width="80"
+                    height="80"
+                    loading="lazy"
                   />
                 ) : (
                   <User size={32} className={isDarkMode ? 'text-gray-400' : 'text-gray-500'} />
