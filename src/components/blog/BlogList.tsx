@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Calendar, Tag, Clock, ArrowRight, Search, AlertTriangle } from 'lucide-react';
+import { Calendar, Tag, Clock, ArrowRight, Search, AlertTriangle, User } from 'lucide-react';
 import { getBlogPosts, BlogPost } from '../../services/contentful';
 import AnimatedSection from '../AnimatedSection';
 import { useAppContext } from '../../context/AppContext';
@@ -391,6 +391,31 @@ const BlogPostCard = ({ post, index }: BlogPostCardProps) => {
               <span>{readingTime} min read</span>
             </div>
           </div>
+          
+          {/* Author information */}
+          {post.fields.author && (
+            <div className="flex items-center mt-4">
+              {post.fields.author.fields?.avatar?.fields?.file?.url ? (
+                <img
+                  src={`https:${post.fields.author.fields.avatar.fields.file.url}`}
+                  alt={post.fields.author.fields.name || "Author"}
+                  className="w-6 h-6 rounded-full object-cover mr-2 border border-gray-200 dark:border-gray-700"
+                  width="24"
+                  height="24"
+                  loading="lazy"
+                />
+              ) : (
+                <div className={`w-6 h-6 rounded-full mr-2 flex items-center justify-center ${
+                  isDarkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-600'
+                }`}>
+                  <User size={12} />
+                </div>
+              )}
+              <span className={`text-xs font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                {post.fields.author.fields?.name || (post.sys.id === '4teKNzPkzDPysbkdacG8D0' ? 'Enri Zhulati' : 'Author')}
+              </span>
+            </div>
+          )}
         </div>
         
         <div className={`px-5 pb-5 pt-2 border-t flex justify-between items-center ${

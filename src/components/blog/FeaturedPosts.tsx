@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Calendar } from 'lucide-react';
+import { ArrowRight, Calendar, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { useFeaturedBlogPosts } from '../../utils/blog-hooks';
 import AnimatedSection from '../AnimatedSection';
@@ -77,9 +77,36 @@ const FeaturedPosts = () => {
                   </div>
                   
                   <div className="p-5">
-                    <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-3">
-                      <Calendar size={12} className="mr-1" />
-                      {formattedDate}
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                        <Calendar size={12} className="mr-1" />
+                        {formattedDate}
+                      </div>
+                      
+                      {/* Author with image */}
+                      {post.fields.author && (
+                        <div className="flex items-center">
+                          {post.fields.author.fields?.avatar?.fields?.file?.url ? (
+                            <img
+                              src={`https:${post.fields.author.fields.avatar.fields.file.url}`}
+                              alt={post.fields.author.fields.name || "Author"}
+                              className="w-5 h-5 rounded-full object-cover mr-1.5 border border-gray-200 dark:border-gray-700"
+                              width="20"
+                              height="20"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className={`w-5 h-5 rounded-full mr-1.5 flex items-center justify-center ${
+                              isDarkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-600'
+                            }`}>
+                              <User size={10} />
+                            </div>
+                          )}
+                          <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                            {post.fields.author.fields?.name || (post.sys.id === '4teKNzPkzDPysbkdacG8D0' ? 'Enri Zhulati' : 'Author')}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     
                     <h3 className={`text-lg font-semibold mb-2 group-hover:text-blue-600 transition-colors ${
