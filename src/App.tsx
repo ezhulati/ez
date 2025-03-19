@@ -360,7 +360,7 @@ const HomePage = () => {
                   <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/30 to-indigo-500/30 rounded-3xl blur-2xl"></div>
                   <div className="relative bg-gray-800/40 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden border border-gray-700/50">
                     <lottie-player
-                      src="https://lottie.host/d24b0dec-833f-4259-8bf9-6b911b174645/P4CRRzGREn.json"
+                      src="https://assets3.lottiefiles.com/packages/lf20_UJNc2t.json"
                       background="transparent"
                       speed="1"
                       style={{ width: '100%', height: '400px', borderRadius: '16px' }}

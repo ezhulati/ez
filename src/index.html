@@ -70,36 +70,6 @@
     <!-- Favicon - reduced duplicates -->
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon.svg" />
     
-    <!-- Static lottie replacement - No script needed -->
-    <script>
-      // Define global config to disable lottie animations
-      window.DISABLE_LOTTIE = true;
-      
-      // Replace lottie player with static content
-      window.addEventListener('DOMContentLoaded', function() {
-        var lottieElements = document.querySelectorAll('dotlottie-player');
-        if (lottieElements.length > 0) {
-          lottieElements.forEach(function(element) {
-            // Create static replacement
-            var staticDiv = document.createElement('div');
-            staticDiv.className = element.className + ' static-lottie-replacement';
-            staticDiv.setAttribute('aria-label', element.getAttribute('aria-label') || 'Animation');
-            
-            // Apply same dimensions
-            staticDiv.style.width = element.style.width || '100%';
-            staticDiv.style.height = element.style.height || '100%';
-            
-            // Apply a gradient background or image instead
-            staticDiv.style.background = 'linear-gradient(45deg, #4F46E5, #3B82F6)';
-            staticDiv.style.borderRadius = '8px';
-            
-            // Replace element
-            element.parentNode.replaceChild(staticDiv, element);
-          });
-        }
-      });
-    </script>
-    
     <!-- Google Calendar API Script - Load on demand only -->
     <script>
       window.loadGoogleCalendarAPI = function() {
