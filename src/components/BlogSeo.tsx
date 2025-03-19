@@ -32,8 +32,20 @@ interface BlogSeoProps {
 }
 
 const BlogSeo = ({ seoData }: Partial<BlogSeoProps>) => {
+  // Debug: Log the SEO data being used
+  console.log('BLOGSEO COMPONENT RENDERING WITH:', {
+    title: seoData?.title,
+    description: seoData?.description,
+    ogTitle: seoData?.ogTitle,
+    ogDescription: seoData?.ogDescription,
+    ogImage: seoData?.ogImage ? 'Present' : 'Missing',
+    twitterCard: seoData?.twitterCard,
+    twitterImage: seoData?.twitterImage ? 'Present' : 'Missing',
+  });
+
   // If no data is provided at all, render minimal SEO
   if (!seoData) {
+    console.warn('BLOGSEO: No SEO data provided, using fallback');
     return (
       <Helmet>
         <title>Blog | Enri Zhulati</title>

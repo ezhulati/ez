@@ -102,13 +102,18 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({ items }) => {
           <a href="/" className="flex items-center space-x-2">
             <div className="relative">
               <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-sm"></div>
-              <img 
-                src="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png" 
-                alt="Enri Zhulati" 
-                className="h-8 w-8 rounded-full object-cover relative z-10 border border-blue-500/30"
-                width="32"
-                height="32"
-              />
+              <picture>
+                <source srcSet="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&fm=webp&w=32&h=32&fit=crop" type="image/webp" />
+                <img 
+                  src="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&w=32&h=32&fit=crop" 
+                  alt="Enri Zhulati" 
+                  className="h-8 w-8 rounded-full object-cover relative z-10 border border-blue-500/30"
+                  width="32"
+                  height="32"
+                  loading="eager"
+                  fetchPriority="high"
+                />
+              </picture>
             </div>
             <span className="font-bold text-xl">EZ</span>
           </a>

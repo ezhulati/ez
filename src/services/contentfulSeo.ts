@@ -19,8 +19,23 @@ export const getPostSeoFields = async (identifier: string) => {
   }
   
   if (!post) {
+    console.error('SEO: Post not found for identifier:', identifier);
     return null;
   }
+  
+  // Debug: Log the available metadata fields
+  console.log('SEO FIELDS FROM CONTENTFUL:', {
+    title: post.fields.title,
+    metaTitle: post.fields.metaTitle,
+    metaDescription: post.fields.metaDescription,
+    featuredImage: post.fields.featuredImage ? 'Present' : 'Missing',
+    image: post.fields.image ? 'Present' : 'Missing',
+    ogTitle: post.fields.ogTitle,
+    ogDescription: post.fields.ogDescription,
+    canonicalUrl: post.fields.canonicalUrl,
+    twitterCardType: post.fields.twitterCardType,
+    seoKeywords: post.fields.seoKeywords,
+  });
   
   return {
     // Basic SEO

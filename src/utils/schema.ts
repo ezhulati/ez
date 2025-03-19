@@ -11,7 +11,7 @@ export const getLocalBusinessSchema = () => {
     "name": "EZ Digital",
     "alternateName": ["EZ Digital Strategy", "Enri Zhulati Digital", "Dallas Web Development", "Dallas Digital Agency", "Dallas SEO Expert", "Dallas SEO Consultant"],
     "image": "https://i.postimg.cc/1zv4LQjv/Screenshot-2025-03-09-at-11-05-05-AM.png",
-    "logo": "https://i.postimg.cc/SxbS61PK/EZ-Headshot.png",
+    "logo": "https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&fm=webp&w=192&h=192&fit=crop",
     "url": "https://enrizhulati.com",
     "telephone": "214-205-0264",
     "email": "enrizhulati@gmail.com",
@@ -389,7 +389,7 @@ export const getDigitalExpertSchema = () => {
     "name": "Enri Zhulati",
     "jobTitle": "Digital Growth Strategist",
     "alternateName": ["Dallas SEO Expert", "Dallas SEO Consultant"],
-    "image": "https://i.postimg.cc/SxbS61PK/EZ-Headshot.png",
+    "image": "https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&fm=webp&w=192&h=192&fit=crop",
     "url": "https://enrizhulati.com",
     "address": {
       "@type": "PostalAddress",
@@ -412,7 +412,7 @@ export const getDigitalExpertSchema = () => {
       "url": "https://enrizhulati.com",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://i.postimg.cc/SxbS61PK/EZ-Headshot.png",
+        "url": "https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&fm=webp&w=192&h=192&fit=crop",
         "width": 500,
         "height": 500
       },
@@ -959,7 +959,7 @@ export const getProfessionalServiceSchema = () => {
     "@type": "ProfessionalService",
     "name": "EZ Digital Strategy Services",
     "url": "https://enrizhulati.com",
-    "logo": "https://i.postimg.cc/SxbS61PK/EZ-Headshot.png",
+    "logo": "https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&fm=webp&w=192&h=192&fit=crop",
     "image": "https://i.postimg.cc/1zv4LQjv/Screenshot-2025-03-09-at-11-05-05-AM.png",
     "description": "Strategic digital growth services for businesses looking to improve their online presence and generate more qualified leads.",
     "founder": {
@@ -1198,7 +1198,9 @@ export const getStandaloneLocalBusinessSchema = () => {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "name": "EZ Digital",
-    "alternateName": ["Dallas SEO Expert", "Dallas SEO Consultant"],
+    "alternateName": "EZ Digital Strategy",
+    "image": "https://i.postimg.cc/1zv4LQjv/Screenshot-2025-03-09-at-11-05-05-AM.png",
+    "logo": "https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&fm=webp&w=192&h=192&fit=crop",
     "description": "Professional digital growth services including web development, content creation and SEO for businesses wanting to increase their online visibility",
     "url": "https://enrizhulati.com",
     "telephone": "214-205-0264",
@@ -1231,8 +1233,6 @@ export const getStandaloneLocalBusinessSchema = () => {
       }
     ],
     "priceRange": "$$",
-    "image": "https://i.postimg.cc/1zv4LQjv/Screenshot-2025-03-09-at-11-05-05-AM.png",
-    "logo": "https://i.postimg.cc/SxbS61PK/EZ-Headshot.png",
     "keywords": "web development, digital strategy, SEO services, Dallas SEO expert, Dallas SEO consultant, content creation"
   };
   

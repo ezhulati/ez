@@ -1,19 +1,49 @@
 <!doctype html>
 <html lang="en" class="dark">
   <head>
-    <!-- Google tag (gtag.js) - Optimized loading -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-PRRRS3L42H" fetchpriority="low"></script>
+    <!-- Google tag (gtag.js) - optimized to load after critical content -->
     <script>
       window.addEventListener('load', function() {
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-PRRRS3L42H', { 'send_page_view': false });
+        // Create a function to load the analytics script
+        function loadAnalytics() {
+          if (document.getElementById('google-analytics')) return;
+          
+          var script = document.createElement('script');
+          script.id = 'google-analytics';
+          script.src = 'https://www.googletagmanager.com/gtag/js?id=G-PRRRS3L42H';
+          script.async = true;
+          script.fetchpriority = 'low';
+          document.head.appendChild(script);
+          
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-PRRRS3L42H', { 'send_page_view': false });
+          
+          // Delay the page_view event to not impact core metrics
+          setTimeout(function() {
+            gtag('event', 'page_view');
+          }, 5000);
+        }
         
-        // Delayed pageview to improve FCP and LCP
-        setTimeout(function() {
-          gtag('event', 'page_view');
-        }, 3000);
+        // Load analytics on user interaction or when browser is idle
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(loadAnalytics);
+        } else {
+          setTimeout(loadAnalytics, 3000);
+        }
+        
+        // Also load on user interaction as a fallback
+        function onUserInteraction() {
+          loadAnalytics();
+          ['click', 'touchstart', 'scroll'].forEach(function(event) {
+            document.removeEventListener(event, onUserInteraction, { passive: true });
+          });
+        }
+        
+        ['click', 'touchstart', 'scroll'].forEach(function(event) {
+          document.addEventListener(event, onUserInteraction, { passive: true });
+        });
       });
     </script>
     
@@ -74,8 +104,9 @@
     <!-- Twitter Card Tags -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Growth Advisor - Web Development & Digital Strategy" />
-    <meta name="twitter:description" content="Custom websites, content creation, and SEO services by a Dallas-based digital strategist. Helping businesses improve online visibility with measurable results." />
-    <meta name="twitter:image" content="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png" />
+    <meta name="twitter:description" content="Professional web development, content creation, and SEO services that help your business get found online. Clear strategies and measurable results at transparent pricing." />
+    <meta name="twitter:image" content="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&fm=webp&w=1200&h=630&fit=crop" />
+    <meta name="twitter:image:alt" content="Digital marketing dashboard visualization" />
     <meta name="twitter:creator" content="@enrizhulati" />
     
     <!-- CRITICAL: Canonical URL - This is the definitive version of this page -->
@@ -106,8 +137,56 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon.svg" />
     
-    <!-- Dotlottie Player Script - Loaded with defer to avoid render blocking -->
-    <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module" defer fetchpriority="low"></script>
+    <!-- Dotlottie Player Script - Optimized loading -->
+    <script>
+      // Only load the dotlottie player when needed
+      window.addEventListener('load', function() {
+        // Check if there are any dotlottie-player elements
+        function shouldLoadLottie() {
+          return !!document.querySelector('dotlottie-player') || 
+                 document.body.innerHTML.includes('dotlottie-player');
+        }
+        
+        // Function to load the lottie script
+        function loadLottieScript() {
+          if (document.getElementById('dotlottie-script')) return;
+          
+          var script = document.createElement('script');
+          script.id = 'dotlottie-script';
+          script.src = 'https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs';
+          script.type = 'module';
+          script.fetchpriority = 'low';
+          script.defer = true;
+          document.head.appendChild(script);
+        }
+        
+        // Check if we need to load it immediately
+        if (shouldLoadLottie()) {
+          loadLottieScript();
+        } else {
+          // Otherwise load when user scrolls or interacts
+          function onInteraction() {
+            if (shouldLoadLottie()) {
+              loadLottieScript();
+              ['scroll', 'click'].forEach(function(event) {
+                window.removeEventListener(event, onInteraction, { passive: true });
+              });
+            }
+          }
+          
+          ['scroll', 'click'].forEach(function(event) {
+            window.addEventListener(event, onInteraction, { passive: true });
+          });
+          
+          // Fallback - load after 5 seconds if not loaded yet
+          setTimeout(function() {
+            if (!document.getElementById('dotlottie-script') && shouldLoadLottie()) {
+              loadLottieScript();
+            }
+          }, 5000);
+        }
+      });
+    </script>
     
     <!-- Google Calendar API Script -->
     <script src="https://apis.google.com/js/api.js" async defer fetchpriority="low"></script>
