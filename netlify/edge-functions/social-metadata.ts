@@ -1,7 +1,6 @@
 import type { Context } from '@netlify/edge-functions';
-import { createClient } from 'contentful';
 
-// Add proper types
+// Types
 type ContentfulAsset = {
   fields: {
     file: {
@@ -53,19 +52,34 @@ type BlogPostEntry = {
   };
 };
 
-// Contentful client setup
-const client = createClient({
-  space: process.env.CONTENTFUL_SPACE_ID || 'hdo1k8om3hmw',
-  accessToken: process.env.CONTENTFUL_ACCESS_TOKEN || 'g29C2epdpHoOQsex08PJXphQYxqVWsN-cUZBbO9QA4A',
-  environment: process.env.CONTENTFUL_ENVIRONMENT || 'master',
-});
+// Contentful API constants
+const CONTENTFUL_SPACE_ID = 'hdo1k8om3hmw';
+const CONTENTFUL_ACCESS_TOKEN = 'g29C2epdpHoOQsex08PJXphQYxqVWsN-cUZBbO9QA4A';
+const CONTENTFUL_ENVIRONMENT = 'master';
+
+// Function to fetch from Contentful
+async function fetchFromContentful(query: Record<string, string | number>): Promise<any> {
+  const queryString = Object.entries(query)
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+    .join('&');
+    
+  const url = `https://cdn.contentful.com/spaces/${CONTENTFUL_SPACE_ID}/environments/${CONTENTFUL_ENVIRONMENT}/entries?access_token=${CONTENTFUL_ACCESS_TOKEN}&${queryString}`;
+  
+  const response = await fetch(url);
+  
+  if (!response.ok) {
+    throw new Error(`Contentful API error: ${response.status} ${response.statusText}`);
+  }
+  
+  return await response.json();
+}
 
 // Function to get blog post by custom URL or slug
 async function getBlogPost(identifier: string): Promise<BlogPostEntry | null> {
   try {
     // Try with blogPage first
     try {
-      const response = await client.getEntries({
+      const response = await fetchFromContentful({
         content_type: 'blogPage',
         'fields.customUrl': identifier,
         limit: 1,
@@ -76,7 +90,7 @@ async function getBlogPost(identifier: string): Promise<BlogPostEntry | null> {
       }
       
       // Try with slug
-      const slugResponse = await client.getEntries({
+      const slugResponse = await fetchFromContentful({
         content_type: 'blogPage',
         'fields.slug': identifier,
         limit: 1,
@@ -88,7 +102,7 @@ async function getBlogPost(identifier: string): Promise<BlogPostEntry | null> {
       
     } catch (error) {
       // If that fails, try with blogPost
-      const response = await client.getEntries({
+      const response = await fetchFromContentful({
         content_type: 'blogPost',
         'fields.customUrl': identifier,
         limit: 1,
@@ -99,7 +113,7 @@ async function getBlogPost(identifier: string): Promise<BlogPostEntry | null> {
       }
       
       // Try with slug
-      const slugResponse = await client.getEntries({
+      const slugResponse = await fetchFromContentful({
         content_type: 'blogPost',
         'fields.slug': identifier,
         limit: 1,
