@@ -433,9 +433,13 @@ const BlogPost = () => {
         : `/blog/${recommendedPost.sys.id}`;
     
     return (
-      <div key={recommendedPost.sys.id} className={`rounded-lg overflow-hidden border ${
-        isDarkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-100 bg-white'
-      } shadow-sm hover:shadow-md transition-shadow`}>
+      <Link 
+        to={postLink} 
+        key={recommendedPost.sys.id} 
+        className={`block rounded-lg overflow-hidden border ${
+          isDarkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-100 bg-white'
+        } shadow-sm hover:shadow-md transition-shadow`}
+      >
         <div className="h-48 bg-gray-200 dark:bg-gray-800 overflow-hidden">
           <img 
             src={featuredImageUrl} 
@@ -451,13 +455,13 @@ const BlogPost = () => {
           <p className={`text-sm mb-3 ${
             isDarkMode ? 'text-gray-400' : 'text-gray-500'
           }`}>{recommendedPost.fields.excerpt || ''}</p>
-          <Link to={postLink} className={`text-sm font-medium flex items-center ${
+          <div className={`text-sm font-medium flex items-center ${
             isDarkMode ? 'text-blue-400' : 'text-blue-600'
           }`}>
             Read more <ArrowLeft size={14} className="ml-1 rotate-180" />
-          </Link>
+          </div>
         </div>
-      </div>
+      </Link>
     );
   };
   
@@ -766,9 +770,12 @@ const BlogPost = () => {
                 ) : (
                   // Fallback to default recommendations if there are no recommended posts
                   <>
-                    <div className={`rounded-lg overflow-hidden border ${
-                      isDarkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-100 bg-white'
-                    } shadow-sm hover:shadow-md transition-shadow`}>
+                    <Link 
+                      to="/blog"
+                      className={`block rounded-lg overflow-hidden border ${
+                        isDarkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-100 bg-white'
+                      } shadow-sm hover:shadow-md transition-shadow`}
+                    >
                       <div className="h-48 bg-gray-200 dark:bg-gray-800">
                         {/* Placeholder for image */}
                       </div>
@@ -779,16 +786,19 @@ const BlogPost = () => {
                         <p className={`text-sm mb-3 ${
                           isDarkMode ? 'text-gray-400' : 'text-gray-500'
                         }`}>Discover the must-have tools to improve your website's search engine visibility.</p>
-                        <Link to="/blog" className={`text-sm font-medium flex items-center ${
+                        <div className={`text-sm font-medium flex items-center ${
                           isDarkMode ? 'text-blue-400' : 'text-blue-600'
                         }`}>
                           Read more <ArrowLeft size={14} className="ml-1 rotate-180" />
-                        </Link>
+                        </div>
                       </div>
-                    </div>
-                    <div className={`rounded-lg overflow-hidden border ${
-                      isDarkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-100 bg-white'
-                    } shadow-sm hover:shadow-md transition-shadow`}>
+                    </Link>
+                    <Link 
+                      to="/blog" 
+                      className={`block rounded-lg overflow-hidden border ${
+                        isDarkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-100 bg-white'
+                      } shadow-sm hover:shadow-md transition-shadow`}
+                    >
                       <div className="h-48 bg-gray-200 dark:bg-gray-800">
                         {/* Placeholder for image */}
                       </div>
@@ -799,13 +809,13 @@ const BlogPost = () => {
                         <p className={`text-sm mb-3 ${
                           isDarkMode ? 'text-gray-400' : 'text-gray-500'
                         }`}>Learn the latest strategies for creating high-ranking content in today's competitive landscape.</p>
-                        <Link to="/blog" className={`text-sm font-medium flex items-center ${
+                        <div className={`text-sm font-medium flex items-center ${
                           isDarkMode ? 'text-blue-400' : 'text-blue-600'
                         }`}>
                           Read more <ArrowLeft size={14} className="ml-1 rotate-180" />
-                        </Link>
+                        </div>
                       </div>
-                    </div>
+                    </Link>
                   </>
                 )}
               </div>
