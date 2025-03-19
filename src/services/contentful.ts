@@ -64,6 +64,13 @@ export type BlogPost = {
             };
           };
         };
+        profileImage?: {
+          fields: {
+            file: {
+              url: string;
+            };
+          };
+        };
       };
     };
     publishedDate?: string;

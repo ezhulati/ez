@@ -629,10 +629,10 @@ const BlogPost = () => {
           {/* Meta information with improved layout */}
           <div className="flex flex-wrap items-center gap-5 mb-8 border-b border-gray-100 dark:border-gray-800 pb-6">
             <div className="flex items-center">
-              {post.fields.author?.fields?.avatar?.fields?.file?.url ? (
+              {post.fields.author?.fields?.profileImage?.fields?.file?.url ? (
                 <img 
-                  src={`https:${post.fields.author.fields.avatar.fields.file.url}`}
-                  alt={post.fields.author.fields.name || 'Author'}
+                  src={`https:${post.fields.author.fields.profileImage.fields.file.url}?fm=webp&w=160&h=160&fit=fill`}
+                  alt={post.fields.author?.fields?.name || 'Author'}
                   className="w-10 h-10 rounded-full mr-3 object-cover border-2 border-white dark:border-gray-800 shadow-md"
                   width="40"
                   height="40"
@@ -717,9 +717,9 @@ const BlogPost = () => {
               <div className={`w-20 h-20 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border-4 ${
                 isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-200 border-gray-100'
               }`}>
-                {post.fields.author?.fields?.avatar?.fields?.file?.url ? (
+                {post.fields.author?.fields?.profileImage?.fields?.file?.url ? (
                   <img 
-                    src={`https:${post.fields.author.fields.avatar.fields.file.url}?fm=webp&w=160&h=160&fit=fill`}
+                    src={`https:${post.fields.author.fields.profileImage.fields.file.url}?fm=webp&w=160&h=160&fit=fill`}
                     alt={post.fields.author?.fields?.name || 'Author'}
                     className="w-full h-full object-cover"
                     width="80"
@@ -740,16 +740,40 @@ const BlogPost = () => {
                   {post.fields.author?.fields?.name || (post.sys.id === '4teKNzPkzDPysbkdacG8D0' ? 'Enri Zhulati' : 'Unknown Author')} is a digital marketing specialist with expertise in SEO,
                   content strategy, and website optimization.
                 </p>
-                <div className="flex gap-3">
-                  <a href="#" className={`text-sm font-medium ${
-                    isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
-                  }`}>Twitter</a>
-                  <a href="#" className={`text-sm font-medium ${
-                    isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
-                  }`}>LinkedIn</a>
-                  <a href="#" className={`text-sm font-medium ${
-                    isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
-                  }`}>Website</a>
+                <div className="flex gap-3 mt-3">
+                  <a 
+                    href="https://twitter.com/enrizhulati" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className={`text-sm font-medium ${
+                      isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
+                    }`}
+                    aria-label="Twitter profile"
+                  >
+                    Twitter
+                  </a>
+                  <a 
+                    href="https://linkedin.com/in/enrizhulati" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className={`text-sm font-medium ${
+                      isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
+                    }`}
+                    aria-label="LinkedIn profile"
+                  >
+                    LinkedIn
+                  </a>
+                  <a 
+                    href="https://enrizhulati.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className={`text-sm font-medium ${
+                      isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
+                    }`}
+                    aria-label="Personal website"
+                  >
+                    Website
+                  </a>
                 </div>
               </div>
             </div>
