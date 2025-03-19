@@ -1240,6 +1240,30 @@ export const getStandaloneLocalBusinessSchema = () => {
 };
 
 /**
+ * WebSite schema to control search behavior
+ * This schema tells Google what URL to use when people click on your site in search results
+ * and how to handle the sitelinks search box
+ */
+export const getWebsiteSchema = () => {
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "url": "https://enrizhulati.com/",
+    "name": "Enri Zhulati - Web Development & Digital Strategy",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://enrizhulati.com/search?q={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  };
+  
+  return JSON.stringify(websiteSchema);
+};
+
+/**
  * Get all schema markup combined for the page
  */
 export const getAllSchemaMarkup = () => {
@@ -1251,7 +1275,8 @@ export const getAllSchemaMarkup = () => {
     getCaseStudySchema(),
     getProfessionalServiceSchema(),
     getCareerSchema(),
-    getStandaloneLocalBusinessSchema()
+    getStandaloneLocalBusinessSchema(),
+    getWebsiteSchema()
   ];
 };
 
