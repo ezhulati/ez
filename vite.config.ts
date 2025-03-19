@@ -7,8 +7,9 @@ export default defineConfig({
   plugins: [
     react(),
     visualizer({
-      gzipSize: true,
       open: false,
+      gzipSize: true,
+      brotliSize: true,
     }),
   ],
   
@@ -16,10 +17,23 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor': ['react', 'react-dom', 'react-router-dom'],
-        }
-      }
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['framer-motion', 'lucide-react', 'react-transition-group'],
+        },
+      },
     },
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        // Don't remove console.error for debugging purposes
+        drop_console: false,
+        drop_debugger: true,
+      },
+    },
+    // Reasonable chunk size warning limit
+    chunkSizeWarningLimit: 800,
+    // Generate source maps for debugging
+    sourcemap: true,
   },
   
   // Optimize server options
@@ -27,5 +41,15 @@ export default defineConfig({
     hmr: {
       overlay: true,
     },
+  },
+
+  // Enable CSS source maps in development
+  css: {
+    devSourcemap: true,
+  },
+
+  // Optimize load times with faster browser targets
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'framer-motion'],
   },
 });

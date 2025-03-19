@@ -1,6 +1,6 @@
-import { useEffect, lazy, Suspense, ReactNode } from 'react';
+import React, { useEffect, lazy, Suspense, ReactNode } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { ArrowRight, ExternalLink, ChevronDown, Sparkles, LineChart, Zap, Code, Calendar } from 'lucide-react';
+import { ArrowRight, ExternalLink, ChevronDown, Sparkles, LineChart, Zap, Code, Calendar, FileText, Target, Share2, Globe } from 'lucide-react';
 import { useAppContext } from './context/AppContext';
 import ThemeToggle from './ThemeToggle';
 import { handleAnchorClick } from './utils/smoothScroll';
@@ -9,6 +9,22 @@ import PageTransition from './components/PageTransition';
 import SchemaMarkup from './SchemaMarkup';
 import MobileNavigation from './components/MobileNavigation';
 import BackToTop from './components/BackToTop';
+
+// Add dotlottie-player type definition
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'dotlottie-player': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        src?: string;
+        autoplay?: boolean;
+        loop?: boolean;
+        style?: React.CSSProperties;
+        background?: string;
+        speed?: string;
+      };
+    }
+  }
+}
 
 // Lazily loaded components for better performance
 const AnimatedSection = lazy(() => import('./components/AnimatedSection'));
@@ -35,31 +51,6 @@ const ComponentLoader = () => (
 
 // Empty fallback for non-critical components
 const EmptyFallback = () => <></>;
-
-// Replace icon components with simpler versions to reduce DOM nodes
-const SimpleFileText = () => (
-  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center rounded-lg">
-    <div className="w-5 h-5 bg-blue-500"></div>
-  </div>
-);
-
-const SimpleTarget = () => (
-  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center rounded-lg">
-    <div className="w-5 h-5 bg-emerald-500 rounded-full"></div>
-  </div>
-);
-
-const SimpleShare = () => (
-  <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center rounded-lg">
-    <div className="w-5 h-5 bg-purple-500"></div>
-  </div>
-);
-
-const SimpleGlobe = () => (
-  <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center rounded-lg">
-    <div className="w-5 h-5 bg-amber-500 rounded-full"></div>
-  </div>
-);
 
 // Navigation items - Updated to include blog
 const navItems = [
@@ -393,28 +384,40 @@ const HomePage = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <Suspense fallback={<ComponentLoader />}>
               <ServiceCard 
-                icon={<SimpleFileText />}
+                icon={<FileText />}
                 title="Content Creation"
-                description="High-quality, SEO-optimized content that engages your audience and drives conversions."
-                delay={0}
+                description="Words that actually connect with people and help Google find you"
+                delay={0.1}
               />
               <ServiceCard 
-                icon={<SimpleTarget />}
-                title="SEO Strategy"
-                description="Data-driven SEO strategies that improve your search rankings and drive organic traffic."
-                delay={0}
-              />
-              <ServiceCard 
-                icon={<SimpleShare />}
-                title="Brand Strategy"
-                description="Develop a compelling brand identity that resonates with your target audience."
-                delay={0}
-              />
-              <ServiceCard 
-                icon={<SimpleGlobe />}
+                icon={<Code />}
                 title="Web Development"
-                description="Custom websites built with modern technologies for optimal performance and user experience."
-                delay={0}
+                description="Fast, mobile-friendly sites that look great and convert visitors"
+                delay={0.2}
+              />
+              <ServiceCard 
+                icon={<Globe />}
+                title="SEO Strategy"
+                description="No tricks or hacks—just solid optimization that works"
+                delay={0.3}
+              />
+              <ServiceCard 
+                icon={<Target />}
+                title="Digital Marketing"
+                description="Campaigns that focus on ROI, not vanity metrics"
+                delay={0.4}
+              />
+              <ServiceCard 
+                icon={<Zap />}
+                title="Tech Automation"
+                description="Smart tools that save you time and reduce busywork"
+                delay={0.5}
+              />
+              <ServiceCard 
+                icon={<Share2 />}
+                title="Social Media"
+                description="Content that builds genuine connections with your audience"
+                delay={0.6}
               />
             </Suspense>
           </div>
@@ -623,11 +626,13 @@ interface ServiceCardProps {
   className?: string;
 }
 
-const ServiceCard = ({ icon, title, description, className = "" }: ServiceCardProps) => {
+const ServiceCard = ({ icon, title, description, className = "", delay = 0 }: ServiceCardProps) => {
   return (
-    <div className={`p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm ${className}`}>
-      {icon}
-      <h3 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">
+    <div className={`p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm hover:shadow-md transition-shadow ${className}`}>
+      <div className="w-12 h-12 mb-4 flex items-center justify-center bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        {React.cloneElement(icon as React.ReactElement, { className: "text-blue-500" })}
+      </div>
+      <h3 className="text-xl font-bold text-gray-900 dark:text-white">
         {title}
       </h3>
       <p className="mt-2 text-gray-700 dark:text-gray-300">
