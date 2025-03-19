@@ -47,8 +47,8 @@ const FeaturedPosts = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
           {featuredPosts.map((post, index) => {
             // Get image URL or use a placeholder
-            const imageUrl = post.fields.featuredImage?.fields?.file?.url 
-              ? `https:${post.fields.featuredImage.fields.file.url}`
+            const imageUrl = post.fields.image?.fields?.file?.url 
+              ? `https:${post.fields.image.fields.file.url}`
               : 'https://images.unsplash.com/photo-1519681393784-d120267933ba';
               
             // Format date
