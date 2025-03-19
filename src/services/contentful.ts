@@ -13,6 +13,7 @@ export type BlogPost = {
     customUrl?: string;
     seoTitle?: string;
     seoDescription?: string;
+    introHook?: string;
     image?: {
       fields: {
         file: {

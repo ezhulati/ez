@@ -485,11 +485,20 @@ const BlogPost = () => {
           )}
           
           {/* Title with enhanced typography */}
-          <h1 className={`text-3xl sm:text-4xl md:text-5xl font-bold mb-6 leading-tight ${
+          <h1 className={`text-3xl sm:text-4xl md:text-5xl font-bold mb-5 leading-tight ${
             isDarkMode ? 'text-white' : 'text-gray-900'
           }`}>
             {post.fields.title}
           </h1>
+          
+          {/* Introductory hook */}
+          {post.fields.introHook && (
+            <p className={`text-xl md:text-2xl mb-6 font-medium leading-relaxed ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>
+              {post.fields.introHook}
+            </p>
+          )}
           
           {/* Meta information with improved layout */}
           <div className="flex flex-wrap items-center gap-5 mb-8 border-b border-gray-100 dark:border-gray-800 pb-6">
