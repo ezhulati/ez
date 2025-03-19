@@ -1,105 +1,129 @@
 <!doctype html>
 <html lang="en" class="dark">
   <head>
-    <!-- Google tag (gtag.js) - optimized to load after critical content -->
-    <script>
-      window.addEventListener('load', function() {
-        // Create a function to load the analytics script
-        function loadAnalytics() {
-          if (document.getElementById('google-analytics')) return;
-          
-          var script = document.createElement('script');
-          script.id = 'google-analytics';
-          script.src = 'https://www.googletagmanager.com/gtag/js?id=G-PRRRS3L42H';
-          script.async = true;
-          script.fetchpriority = 'low';
-          document.head.appendChild(script);
-          
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', 'G-PRRRS3L42H', { 'send_page_view': false });
-          
-          // Delay the page_view event to not impact core metrics
-          setTimeout(function() {
-            gtag('event', 'page_view');
-          }, 5000);
-        }
-        
-        // Load analytics on user interaction or when browser is idle
-        if ('requestIdleCallback' in window) {
-          requestIdleCallback(loadAnalytics);
-        } else {
-          setTimeout(loadAnalytics, 3000);
-        }
-        
-        // Also load on user interaction as a fallback
-        function onUserInteraction() {
-          loadAnalytics();
-          ['click', 'touchstart', 'scroll'].forEach(function(event) {
-            document.removeEventListener(event, onUserInteraction, { passive: true });
-          });
-        }
-        
-        ['click', 'touchstart', 'scroll'].forEach(function(event) {
-          document.addEventListener(event, onUserInteraction, { passive: true });
-        });
-      });
-    </script>
+    <!-- Resource hints for critical rendering -->
+    <link rel="dns-prefetch" href="https://images.ctfassets.net">
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://images.unsplash.com">
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+    <link rel="dns-prefetch" href="https://www.clarity.ms">
+    
+    <!-- Preconnect to critical origins -->
+    <link rel="preconnect" href="https://images.ctfassets.net" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+    
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/favicon.svg" as="image" type="image/svg+xml">
+    <link rel="preload" href="/assets/index-5400953b.css" as="style">
     
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
-    <!-- Microsoft Clarity Analytics - Optimized loading -->
-    <script type="text/javascript">
-        window.addEventListener('load', function() {
-            setTimeout(function() {
-                (function(c,l,a,r,i,t,y){
-                    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                    t.setAttribute('fetchpriority', 'low');
-                    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-                })(window, document, "clarity", "script", "qlv8zx6uv2");
-            }, 3000); // Delay clarity initialization by 3 seconds
+    <!-- Google tag (gtag.js) - optimized to load after user interaction -->
+    <script>
+      // Only load analytics after user interaction
+      function loadAnalytics() {
+        if (window.analyticsLoaded) return;
+        window.analyticsLoaded = true;
+        
+        var script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-PRRRS3L42H';
+        document.head.appendChild(script);
+        
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-PRRRS3L42H', {
+          'send_page_view': false,
+          'anonymize_ip': true,
+          'cookie_flags': 'SameSite=None;Secure'
         });
+        
+        // Delay pageview event
+        setTimeout(function() {
+          gtag('event', 'page_view');
+        }, 10000);
+      }
+      
+      // Listen for user interaction to load analytics
+      function onUserInteraction() {
+        loadAnalytics();
+        ['click', 'scroll', 'touchstart'].forEach(function(e) {
+          document.removeEventListener(e, onUserInteraction, {passive: true});
+        });
+      }
+      
+      // Add listener after page is loaded
+      window.addEventListener('load', function() {
+        // Add listeners for user interaction
+        ['click', 'scroll', 'touchstart'].forEach(function(e) {
+          document.addEventListener(e, onUserInteraction, {passive: true});
+        });
+        
+        // Fallback to load after 15 seconds in case of no interaction
+        setTimeout(loadAnalytics, 15000);
+      });
     </script>
     
-    <!-- SEO Meta Tags - Enhanced for AI and Search Engines -->
+    <!-- Microsoft Clarity - Load only on user scroll or after timeout -->
+    <script>
+      window.addEventListener('load', function() {
+        // Only load Clarity after significant scroll
+        var clarityLoaded = false;
+        
+        function loadClarity() {
+          if (clarityLoaded) return;
+          clarityLoaded = true;
+          
+          var clarityScript = document.createElement('script');
+          clarityScript.async = true;
+          clarityScript.defer = true;
+          clarityScript.src = 'https://www.clarity.ms/tag/qlv8zx6uv2';
+          
+          // Execute Clarity after script loads
+          clarityScript.onload = function() {
+            setTimeout(function() {
+              if (typeof clarity === 'function') {
+                clarity('set', 'cookies', false);
+                clarity('consent');
+              }
+            }, 2000);
+          };
+          
+          document.head.appendChild(clarityScript);
+        }
+        
+        // Load on significant scroll
+        function onSignificantScroll() {
+          if (window.scrollY > window.innerHeight * 0.5) {
+            loadClarity();
+            window.removeEventListener('scroll', onSignificantScroll, {passive: true});
+          }
+        }
+        
+        window.addEventListener('scroll', onSignificantScroll, {passive: true});
+        
+        // Fallback after 20 seconds
+        setTimeout(loadClarity, 20000);
+      });
+    </script>
+    
+    <!-- SEO Meta Tags -->
     <title>Growth Advisor - Web Development & Digital Strategy</title>
-    <meta name="description" content="Dallas-based web development and digital growth strategies that deliver measurable results. Custom websites, SEO, and content creation services to help your business get found online." />
-    <meta name="keywords" content="web development Dallas, digital strategy, content creation, website design, SEO services Dallas, digital marketing Dallas, online presence, brand visibility, conversion optimization, Dallas web developer, content marketing, business growth, online visibility, website optimization, digital growth consultant, local SEO Dallas, web design DFW, AI-friendly websites, React developer Dallas, small business websites, Dallas SEO expert, Dallas SEO consultant" />
-    
-    <!-- Geo Targeting Tags -->
-    <meta name="geo.region" content="US-TX" />
-    <meta name="geo.placename" content="Dallas" />
-    <meta name="geo.position" content="32.7767;-96.7970" />
-    <meta name="ICBM" content="32.7767, -96.7970" />
-    
-    <!-- Dublin Core metadata for improved semantic understanding -->
-    <meta name="DC.title" content="Growth Advisor - Web Development & Digital Strategy" />
-    <meta name="DC.description" content="Custom websites, content creation, and digital growth strategies that deliver real results at a fraction of agency costs. Based in Dallas, TX, serving clients nationwide." />
-    <meta name="DC.subject" content="Web Development, Digital Strategy, Content Creation, SEO, Dallas Web Designer, Dallas SEO Expert, Dallas SEO Consultant" />
-    <meta name="DC.creator" content="Enri Zhulati" />
-    <meta name="DC.publisher" content="EZ Digital" />
-    <meta name="DC.rights" content="All rights reserved, EZ Digital 2025" />
-    <meta name="DC.language" content="en" />
+    <meta name="description" content="Professional web development, content creation, and SEO services that help your business get found online. Clear strategies and measurable results at transparent pricing." />
+    <meta name="keywords" content="website design company, SEO agency near me, content marketing services, WordPress developer, digital marketing consultant, affordable SEO services, small business website design, marketing automation, lead generation services, website conversion optimization, AI business infrastructure, digital transformation system, 10X marketing ROI, business scaling strategy, AI implementation expert, growth marketing infrastructure, premium SEO results, conversion optimization system, AI content strategy, complete digital ecosystem, Dallas SEO expert, Dallas SEO consultant" />
     
     <!-- Open Graph / Social Media Meta Tags -->
     <meta property="og:title" content="Growth Advisor - Web Development & Digital Strategy" />
-    <meta property="og:description" content="Dallas-based web development and digital growth services that deliver measurable results. Custom websites, content creation, and SEO that help businesses get found online." />
+    <meta property="og:description" content="Professional web development, content creation, and SEO services that help your business get found online. Clear strategies and measurable results at transparent pricing." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&fm=webp&w=1200&h=630&fit=crop" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:url" content="https://enrizhulati.com" />
-    <meta property="og:site_name" content="EZ Digital" />
-    <meta property="og:locale" content="en_US" />
-    <meta property="business:contact_data:street_address" content="1234 Digital Way, Suite 500" />
-    <meta property="business:contact_data:locality" content="Dallas" />
-    <meta property="business:contact_data:region" content="TX" />
-    <meta property="business:contact_data:postal_code" content="75201" />
-    <meta property="business:contact_data:country_name" content="United States" />
+    <meta property="og:image:alt" content="Digital marketing dashboard visualization" />
     
     <!-- Twitter Card Tags -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -107,92 +131,78 @@
     <meta name="twitter:description" content="Professional web development, content creation, and SEO services that help your business get found online. Clear strategies and measurable results at transparent pricing." />
     <meta name="twitter:image" content="https://i.postimg.cc/SxbS61PK/EZ-Headshot.png?dl=1&fm=webp&w=1200&h=630&fit=crop" />
     <meta name="twitter:image:alt" content="Digital marketing dashboard visualization" />
-    <meta name="twitter:creator" content="@enrizhulati" />
     
-    <!-- CRITICAL: Canonical URL - This is the definitive version of this page -->
-    <link rel="canonical" href="https://enrizhulati.com/" />
+    <!-- Canonical URL -->
+    <meta name="canonical" content="https://enrizhulati.com" />
     
     <!-- Additional Meta Tags -->
     <meta name="author" content="Enri Zhulati" />
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="robots" content="index, follow" />
     
-    <!-- AI-specific meta tags -->
-    <meta name="ai-content-quality" content="original, expert-authored" />
-    <meta name="ai-content-topic" content="web development, digital strategy, SEO, content creation, Dallas SEO expert, Dallas SEO consultant" />
-    <meta name="ai-business-type" content="digital service provider, web developer, marketing consultant, SEO specialist" />
-    <meta name="ai-service-area" content="Dallas, TX and nationwide" />
-    <meta name="ai-pricing-range" content="$$" />
-    <meta name="ai-business-goal" content="help businesses improve online visibility and generate more qualified leads" />
-    
-    <!-- Service Focus -->
-    <meta name="service-offering" content="web development, content creation, digital strategy, SEO, local marketing, Dallas SEO services" />
-    <meta name="industry-focus" content="small business, professional services, B2B, local services" />
-    <meta name="competitive-advantage" content="transparent pricing, measurable results, personalized service" />
-    
-    <!-- Domain consistency directive -->
-    <meta name="format-detection" content="telephone=no">
-    
-    <!-- Favicon -->
+    <!-- Favicon - reduced duplicates -->
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon.svg" />
     
-    <!-- Dotlottie Player Script - Optimized loading -->
+    <!-- Static lottie replacement - No script needed -->
     <script>
-      // Only load the dotlottie player when needed
-      window.addEventListener('load', function() {
-        // Check if there are any dotlottie-player elements
-        function shouldLoadLottie() {
-          return !!document.querySelector('dotlottie-player') || 
-                 document.body.innerHTML.includes('dotlottie-player');
-        }
-        
-        // Function to load the lottie script
-        function loadLottieScript() {
-          if (document.getElementById('dotlottie-script')) return;
-          
-          var script = document.createElement('script');
-          script.id = 'dotlottie-script';
-          script.src = 'https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs';
-          script.type = 'module';
-          script.fetchpriority = 'low';
-          script.defer = true;
-          document.head.appendChild(script);
-        }
-        
-        // Check if we need to load it immediately
-        if (shouldLoadLottie()) {
-          loadLottieScript();
-        } else {
-          // Otherwise load when user scrolls or interacts
-          function onInteraction() {
-            if (shouldLoadLottie()) {
-              loadLottieScript();
-              ['scroll', 'click'].forEach(function(event) {
-                window.removeEventListener(event, onInteraction, { passive: true });
-              });
-            }
-          }
-          
-          ['scroll', 'click'].forEach(function(event) {
-            window.addEventListener(event, onInteraction, { passive: true });
+      // Define global config to disable lottie animations
+      window.DISABLE_LOTTIE = true;
+      
+      // Replace lottie player with static content
+      window.addEventListener('DOMContentLoaded', function() {
+        var lottieElements = document.querySelectorAll('dotlottie-player');
+        if (lottieElements.length > 0) {
+          lottieElements.forEach(function(element) {
+            // Create static replacement
+            var staticDiv = document.createElement('div');
+            staticDiv.className = element.className + ' static-lottie-replacement';
+            staticDiv.setAttribute('aria-label', element.getAttribute('aria-label') || 'Animation');
+            
+            // Apply same dimensions
+            staticDiv.style.width = element.style.width || '100%';
+            staticDiv.style.height = element.style.height || '100%';
+            
+            // Apply a gradient background or image instead
+            staticDiv.style.background = 'linear-gradient(45deg, #4F46E5, #3B82F6)';
+            staticDiv.style.borderRadius = '8px';
+            
+            // Replace element
+            element.parentNode.replaceChild(staticDiv, element);
           });
-          
-          // Fallback - load after 5 seconds if not loaded yet
-          setTimeout(function() {
-            if (!document.getElementById('dotlottie-script') && shouldLoadLottie()) {
-              loadLottieScript();
-            }
-          }, 5000);
         }
       });
     </script>
     
-    <!-- Google Calendar API Script -->
-    <script src="https://apis.google.com/js/api.js" async defer fetchpriority="low"></script>
+    <!-- Google Calendar API Script - Load on demand only -->
+    <script>
+      window.loadGoogleCalendarAPI = function() {
+        if (document.getElementById('google-calendar-script')) return;
+        
+        var script = document.createElement('script');
+        script.id = 'google-calendar-script';
+        script.src = 'https://apis.google.com/js/api.js';
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+      };
+    </script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Module loading - we load necessary modules only when we need them, not during initial load -->
+    <script type="module">
+      // Use browser idle time to load non-critical modules
+      window.addEventListener('load', function() {
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(function() {
+            import('/assets/index-3db79c58.js').catch(console.error);
+          });
+        } else {
+          setTimeout(function() {
+            import('/assets/index-3db79c58.js').catch(console.error);
+          }, 100);
+        }
+      });
+    </script>
   </body>
 </html>

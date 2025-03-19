@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense, ReactNode } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { ArrowRight, ExternalLink, ChevronDown, Sparkles, LineChart, Zap, Code, Calendar } from 'lucide-react';
 import { useAppContext } from './context/AppContext';
@@ -9,12 +9,6 @@ import PageTransition from './components/PageTransition';
 import SchemaMarkup from './SchemaMarkup';
 import MobileNavigation from './components/MobileNavigation';
 import BackToTop from './components/BackToTop';
-
-// Import icons individually to reduce bundle size 
-import { FileText } from 'lucide-react';
-import { Target } from 'lucide-react';
-import { Share2 } from 'lucide-react';
-import { Globe } from 'lucide-react';
 
 // Lazily loaded components for better performance
 const AnimatedSection = lazy(() => import('./components/AnimatedSection'));
@@ -34,8 +28,36 @@ const Search = lazy(() => import('./pages/Search'));
 
 // Loading fallback for lazy components
 const ComponentLoader = () => (
-  <div className="min-h-24 flex items-center justify-center">
-    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+  <div className="flex justify-center items-center h-full min-h-[200px]">
+    <div className="w-8 h-8 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+  </div>
+);
+
+// Empty fallback for non-critical components
+const EmptyFallback = () => <></>;
+
+// Replace icon components with simpler versions to reduce DOM nodes
+const SimpleFileText = () => (
+  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center rounded-lg">
+    <div className="w-5 h-5 bg-blue-500"></div>
+  </div>
+);
+
+const SimpleTarget = () => (
+  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center rounded-lg">
+    <div className="w-5 h-5 bg-emerald-500 rounded-full"></div>
+  </div>
+);
+
+const SimpleShare = () => (
+  <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center rounded-lg">
+    <div className="w-5 h-5 bg-purple-500"></div>
+  </div>
+);
+
+const SimpleGlobe = () => (
+  <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center rounded-lg">
+    <div className="w-5 h-5 bg-amber-500 rounded-full"></div>
   </div>
 );
 
@@ -371,40 +393,28 @@ const HomePage = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <Suspense fallback={<ComponentLoader />}>
               <ServiceCard 
-                icon={<FileText />}
+                icon={<SimpleFileText />}
                 title="Content Creation"
-                description="Words that actually connect with people and help Google find you"
-                delay={0.1}
+                description="High-quality, SEO-optimized content that engages your audience and drives conversions."
+                delay={0}
               />
               <ServiceCard 
-                icon={<Code />}
+                icon={<SimpleTarget />}
+                title="SEO Strategy"
+                description="Data-driven SEO strategies that improve your search rankings and drive organic traffic."
+                delay={0}
+              />
+              <ServiceCard 
+                icon={<SimpleShare />}
+                title="Brand Strategy"
+                description="Develop a compelling brand identity that resonates with your target audience."
+                delay={0}
+              />
+              <ServiceCard 
+                icon={<SimpleGlobe />}
                 title="Web Development"
-                description="Fast, mobile-friendly sites that look great and convert visitors"
-                delay={0.2}
-              />
-              <ServiceCard 
-                icon={<Globe />}
-                title="Digital Strategy"
-                description="Comprehensive approach to building your online presence and visibility"
-                delay={0.3}
-              />
-              <ServiceCard 
-                icon={<Target />}
-                title="Digital Marketing"
-                description="Campaigns that focus on ROI, not vanity metrics"
-                delay={0.4}
-              />
-              <ServiceCard 
-                icon={<Zap />}
-                title="Tech Automation"
-                description="Smart tools that save you time and reduce busywork"
-                delay={0.5}
-              />
-              <ServiceCard 
-                icon={<Share2 />}
-                title="Social Media"
-                description="Content that builds genuine connections with your audience"
-                delay={0.6}
+                description="Custom websites built with modern technologies for optimal performance and user experience."
+                delay={0}
               />
             </Suspense>
           </div>
@@ -604,44 +614,7 @@ const HomePage = () => {
   );
 };
 
-// Custom icons as needed
-const FileText = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
-    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-    <polyline points="14 2 14 8 20 8" />
-    <line x1="16" y1="13" x2="8" y2="13" />
-    <line x1="16" y1="17" x2="8" y2="17" />
-    <line x1="10" y1="9" x2="8" y2="9" />
-  </svg>
-);
-
-const Target = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
-    <circle cx="12" cy="12" r="10" />
-    <circle cx="12" cy="12" r="6" />
-    <circle cx="12" cy="12" r="2" />
-  </svg>
-);
-
-const Share2 = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
-    <circle cx="18" cy="5" r="3" />
-    <circle cx="6" cy="12" r="3" />
-    <circle cx="18" cy="19" r="3" />
-    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-  </svg>
-);
-
-const Globe = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
-    <circle cx="12" cy="12" r="10" />
-    <line x1="2" y1="12" x2="22" y2="12" />
-    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-  </svg>
-);
-
-// Service Card Component
+// Simplified Service Card with fewer DOM nodes and no animations
 interface ServiceCardProps {
   icon?: ReactNode;
   title: string;
@@ -650,40 +623,21 @@ interface ServiceCardProps {
   className?: string;
 }
 
-const ServiceCard = ({ icon, title, description, delay, className = "" }: ServiceCardProps) => {
-  const { isDarkMode } = useAppContext();
-  
+const ServiceCard = ({ icon, title, description, className = "" }: ServiceCardProps) => {
   return (
-    <AnimatedSection 
-      className={`${isDarkMode 
-        ? 'bg-gray-800/50 border-gray-700/50 text-white' 
-        : 'bg-white border-gray-200 text-gray-900'
-      } backdrop-blur-sm rounded-xl p-6 border shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-300 ${className}`}
-      delay={delay}
-    >
-      <div className={`absolute top-0 right-0 w-40 h-40 rounded-full translate-x-16 -translate-y-16 filter blur-xl ${
-        isDarkMode 
-          ? 'bg-blue-500/10 group-hover:bg-blue-400/20' 
-          : 'bg-blue-500/5 group-hover:bg-blue-400/10'
-      } transition-colors duration-700`}></div>
-      
-      <div className="relative z-10">
-        {icon && (
-          <div className={`${isDarkMode 
-            ? 'bg-blue-600/20 text-white' 
-            : 'bg-blue-100 text-blue-600'
-          } p-3 inline-flex rounded-lg mb-4 shadow-inner`}>
-            {icon}
-          </div>
-        )}
-        <h3 className={`text-xl font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{title}</h3>
-        <p className={`leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{description}</p>
-      </div>
-    </AnimatedSection>
+    <div className={`p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm ${className}`}>
+      {icon}
+      <h3 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">
+        {title}
+      </h3>
+      <p className="mt-2 text-gray-700 dark:text-gray-300">
+        {description}
+      </p>
+    </div>
   );
 };
 
-// Process Step Component
+// Simplified Process Step with reduced DOM nodes
 interface ProcessStepProps {
   number: string;
   title: string;
@@ -691,31 +645,21 @@ interface ProcessStepProps {
   delay: number;
 }
 
-const ProcessStep = ({ number, title, description, delay }: ProcessStepProps) => {
-  const { isDarkMode } = useAppContext();
-  
+const ProcessStep = ({ number, title, description }: ProcessStepProps) => {
   return (
-    <AnimatedSection 
-      className={`flex gap-6 ${isDarkMode 
-        ? 'bg-gray-800/50 border-gray-700/50' 
-        : 'bg-white border-gray-100'
-      } backdrop-blur-sm rounded-xl p-6 border shadow-lg relative overflow-hidden group hover:-translate-y-1 transition-all duration-300`}
-      delay={delay}
-    >
-      <div className={`absolute top-0 right-0 w-32 h-32 rounded-full translate-x-16 -translate-y-16 filter blur-xl ${
-        isDarkMode 
-          ? 'bg-blue-500/10 group-hover:bg-blue-400/20' 
-          : 'bg-blue-500/5 group-hover:bg-blue-400/10'
-      } transition-colors duration-700`}></div>
-      
-      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold relative z-10">
+    <div className="flex items-start">
+      <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-lg">
         {number}
       </div>
-      <div className="relative z-10">
-        <h3 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{title}</h3>
-        <p className={`leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{description}</p>
+      <div className="ml-4">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+          {title}
+        </h3>
+        <p className="mt-1 text-gray-700 dark:text-gray-300">
+          {description}
+        </p>
       </div>
-    </AnimatedSection>
+    </div>
   );
 };
 

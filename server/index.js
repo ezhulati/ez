@@ -1,9 +1,14 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import contentful from 'contentful';
+import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
-import { createClient } from 'contentful';
-import './env.js';  // Import environment variables first
+
+const { createClient } = contentful;
+
+// Load environment variables
+dotenv.config();
 
 // Setup correct __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -19,11 +24,14 @@ app.use(express.static(path.join(__dirname, '../dist')));
 // Read the HTML file once at startup
 let indexHTML = fs.readFileSync(path.join(__dirname, '../dist/index.html'), 'utf8');
 
-// Initialize Contentful client
+// Initialize Contentful client with direct environment variables
+console.log('Contentful Space ID:', process.env.VITE_CONTENTFUL_SPACE_ID);
+console.log('Contentful Environment:', process.env.VITE_CONTENTFUL_ENVIRONMENT || 'master');
+
 const client = createClient({
-  space: process.env.CONTENTFUL_SPACE_ID || process.env.VITE_CONTENTFUL_SPACE_ID,
-  accessToken: process.env.CONTENTFUL_ACCESS_TOKEN || process.env.VITE_CONTENTFUL_ACCESS_TOKEN,
-  environment: process.env.CONTENTFUL_ENVIRONMENT || process.env.VITE_CONTENTFUL_ENVIRONMENT || 'master'
+  space: process.env.VITE_CONTENTFUL_SPACE_ID,
+  accessToken: process.env.VITE_CONTENTFUL_ACCESS_TOKEN,
+  environment: process.env.VITE_CONTENTFUL_ENVIRONMENT || 'master'
 });
 
 // Helper to safely clean strings for HTML
@@ -177,9 +185,9 @@ app.get('*', (req, res) => {
 
 // Start server with environment variables
 console.log('Starting server with Contentful configuration:');
-console.log('- Space ID:', process.env.CONTENTFUL_SPACE_ID || process.env.VITE_CONTENTFUL_SPACE_ID ? 'Set' : 'Missing');
-console.log('- Access Token:', process.env.CONTENTFUL_ACCESS_TOKEN || process.env.VITE_CONTENTFUL_ACCESS_TOKEN ? 'Set' : 'Missing');
-console.log('- Environment:', process.env.CONTENTFUL_ENVIRONMENT || process.env.VITE_CONTENTFUL_ENVIRONMENT || 'master');
+console.log('- Space ID:', process.env.VITE_CONTENTFUL_SPACE_ID ? 'Set' : 'Missing');
+console.log('- Access Token:', process.env.VITE_CONTENTFUL_ACCESS_TOKEN ? 'Set' : 'Missing');
+console.log('- Environment:', process.env.VITE_CONTENTFUL_ENVIRONMENT || 'master');
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
