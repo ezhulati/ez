@@ -7,6 +7,7 @@ import App from './App';
 import './index.css';
 import { BrowserRouter } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
+import { HelmetProvider } from 'react-helmet-async';
 
 // Conditionally render the application
 const renderApp = () => {
@@ -17,11 +18,13 @@ const renderApp = () => {
   // Create react root and render app
   ReactDOM.createRoot(root).render(
     <React.StrictMode>
-      <AppProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </AppProvider>
+      <HelmetProvider>
+        <AppProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </AppProvider>
+      </HelmetProvider>
     </React.StrictMode>
   );
   
