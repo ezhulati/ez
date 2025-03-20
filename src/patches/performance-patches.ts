@@ -5,6 +5,21 @@
  * It focuses on reducing main thread work and JavaScript execution time.
  */
 
+// Configuration settings for performance optimizations
+export const performanceConfig = {
+  // Set to false to enable Lottie animations (better user experience but worse performance)
+  replaceLottieWithStatic: false,
+  
+  // Set to false to load all third-party scripts immediately
+  deferThirdPartyScripts: true,
+  
+  // Paths that should be prevented from loading
+  preventScriptPaths: [
+    'googletagmanager.com',
+    'clarity.ms'
+  ]
+};
+
 /**
  * Replaces Lottie animations with static content
  * This dramatically reduces JS execution time and DOM size
@@ -12,6 +27,13 @@
 export function replaceLottieAnimations(): void {
   // If script is running on server during SSR, do nothing
   if (typeof document === 'undefined') return;
+  
+  // Skip if configuration says to keep Lottie animations
+  if (!performanceConfig.replaceLottieWithStatic) {
+    // Instead of replacing, make sure the Lottie player script is loaded
+    ensureLottiePlayerLoaded();
+    return;
+  }
   
   // Define global config to disable lottie animations
   (window as any).DISABLE_LOTTIE = true;
@@ -63,9 +85,82 @@ export function replaceLottieAnimations(): void {
 }
 
 /**
+ * Ensures that the Lottie player script is loaded
+ */
+export function ensureLottiePlayerLoaded(): void {
+  if (typeof document === 'undefined') return;
+  
+  // Define a function to load the Lottie player
+  const loadLottiePlayer = () => {
+    if (!customElements.get('dotlottie-player')) {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs';
+      script.type = 'module';
+      script.id = 'lottie-player-script';
+      
+      // Set high priority and timeout to ensure it loads quickly
+      script.setAttribute('fetchpriority', 'high');
+      
+      script.onload = () => {
+        console.log('DotLottie Player loaded successfully');
+        // Set flag indicating the player is loaded
+        (window as any).LOTTIE_PLAYER_LOADED = true;
+        
+        // Initialize all Lottie players that might be waiting
+        initializeLottiePlayers();
+      };
+      
+      document.head.appendChild(script);
+    }
+  };
+  
+  // Function to initialize all Lottie players with autoplay
+  const initializeLottiePlayers = () => {
+    const players = document.querySelectorAll('dotlottie-player[autoplay]');
+    
+    players.forEach(player => {
+      // Force a reload or play action on each player
+      try {
+        const playerElement = player as any;
+        if (playerElement.load) {
+          playerElement.load();
+        }
+        if (playerElement.play) {
+          playerElement.play();
+        }
+      } catch (error) {
+        console.error('Error initializing Lottie player:', error);
+      }
+    });
+  };
+  
+  // Load immediately if document is ready
+  if (document.readyState !== 'loading') {
+    loadLottiePlayer();
+  } else {
+    // Otherwise attach to DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', loadLottiePlayer);
+  }
+  
+  // Also attach to load event as a fallback
+  window.addEventListener('load', () => {
+    // Double check that the Lottie player has been loaded
+    if (!customElements.get('dotlottie-player')) {
+      loadLottiePlayer();
+    } else {
+      // If already loaded, just initialize any players
+      initializeLottiePlayers();
+    }
+  });
+}
+
+/**
  * Defers loading of non-critical third-party scripts
  */
 export function deferThirdPartyScripts(): void {
+  // Skip if configuration says not to defer
+  if (!performanceConfig.deferThirdPartyScripts) return;
+  
   if (typeof document === 'undefined') return;
   
   // Flag to track if analytics has been loaded
@@ -112,7 +207,7 @@ export function deferThirdPartyScripts(): void {
   const onUserInteraction = () => {
     loadAnalytics();
     ['click', 'scroll', 'touchstart'].forEach(event => {
-      document.removeEventListener(event, onUserInteraction, { passive: true });
+      document.removeEventListener(event, onUserInteraction);
     });
   };
   
@@ -120,7 +215,7 @@ export function deferThirdPartyScripts(): void {
   window.addEventListener('load', () => {
     // Add listeners for user interaction
     ['click', 'scroll', 'touchstart'].forEach(event => {
-      document.addEventListener(event, onUserInteraction, { passive: true });
+      document.addEventListener(event, onUserInteraction);
     });
     
     // Load analytics after idle time or as fallback
@@ -138,61 +233,132 @@ export function deferThirdPartyScripts(): void {
 export function preventScriptLoading(urlPatterns: string[]): void {
   if (typeof document === 'undefined') return;
   
-  // Remove existing script tags that match patterns
-  const removeMatchingScripts = () => {
-    const scripts = document.getElementsByTagName('script');
-    for (let i = 0; i < scripts.length; i++) {
-      const script = scripts[i];
-      const src = script.src || '';
-      
-      if (urlPatterns.some(pattern => src.includes(pattern))) {
-        if (script.parentNode) {
-          script.parentNode.removeChild(script);
-          console.log(`Removed script: ${src}`);
-          // Decrement index since we removed an item
-          i--;
+  // Use the configured paths from performanceConfig
+  const patternsToBlock = urlPatterns || performanceConfig.preventScriptPaths;
+  
+  // Don't block Lottie if we're not replacing it
+  if (!performanceConfig.replaceLottieWithStatic) {
+    // Filter out any Lottie-related patterns to ensure they can load
+    const filteredPatterns = patternsToBlock.filter(
+      pattern => !pattern.includes('lottie')
+    );
+    
+    // If no patterns left, exit early
+    if (filteredPatterns.length === 0) return;
+    
+    // Remove existing script tags that match patterns
+    const removeMatchingScripts = () => {
+      const scripts = document.getElementsByTagName('script');
+      for (let i = 0; i < scripts.length; i++) {
+        const script = scripts[i];
+        const src = script.src || '';
+        
+        if (filteredPatterns.some(pattern => src.includes(pattern))) {
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+            console.log(`Removed script: ${src}`);
+            // Decrement index since we removed an item
+            i--;
+          }
         }
       }
+    };
+    
+    // Run immediately
+    if (document.readyState !== 'loading') {
+      removeMatchingScripts();
+    } else {
+      // Or wait for DOM to be ready
+      document.addEventListener('DOMContentLoaded', removeMatchingScripts);
     }
-  };
-  
-  // Run immediately
-  if (document.readyState !== 'loading') {
-    removeMatchingScripts();
-  } else {
-    // Or wait for DOM to be ready
-    document.addEventListener('DOMContentLoaded', removeMatchingScripts);
-  }
-  
-  // Also observe the DOM for new script additions
-  if ('MutationObserver' in window) {
-    const observer = new MutationObserver(mutations => {
-      for (const mutation of mutations) {
-        if (mutation.type === 'childList') {
-          for (const node of Array.from(mutation.addedNodes)) {
-            if (node.nodeName === 'SCRIPT') {
-              const script = node as HTMLScriptElement;
-              const src = script.src || '';
-              
-              if (urlPatterns.some(pattern => src.includes(pattern))) {
-                if (script.parentNode) {
-                  script.parentNode.removeChild(script);
-                  console.log(`Prevented script loading: ${src}`);
+    
+    // Also observe the DOM for new script additions
+    if ('MutationObserver' in window) {
+      const observer = new MutationObserver(mutations => {
+        for (const mutation of mutations) {
+          if (mutation.type === 'childList') {
+            for (const node of Array.from(mutation.addedNodes)) {
+              if (node.nodeName === 'SCRIPT') {
+                const script = node as HTMLScriptElement;
+                const src = script.src || '';
+                
+                if (filteredPatterns.some(pattern => src.includes(pattern))) {
+                  if (script.parentNode) {
+                    script.parentNode.removeChild(script);
+                    console.log(`Prevented script loading: ${src}`);
+                  }
                 }
               }
             }
           }
         }
-      }
-    });
-    
-    // Start observing once DOM is loaded
-    document.addEventListener('DOMContentLoaded', () => {
-      observer.observe(document.documentElement, { 
-        childList: true, 
-        subtree: true 
       });
-    });
+      
+      // Start observing once DOM is loaded
+      document.addEventListener('DOMContentLoaded', () => {
+        observer.observe(document.documentElement, { 
+          childList: true, 
+          subtree: true 
+        });
+      });
+    }
+  } else {
+    // Remove existing script tags that match patterns
+    const removeMatchingScripts = () => {
+      const scripts = document.getElementsByTagName('script');
+      for (let i = 0; i < scripts.length; i++) {
+        const script = scripts[i];
+        const src = script.src || '';
+        
+        if (patternsToBlock.some(pattern => src.includes(pattern))) {
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+            console.log(`Removed script: ${src}`);
+            // Decrement index since we removed an item
+            i--;
+          }
+        }
+      }
+    };
+    
+    // Run immediately
+    if (document.readyState !== 'loading') {
+      removeMatchingScripts();
+    } else {
+      // Or wait for DOM to be ready
+      document.addEventListener('DOMContentLoaded', removeMatchingScripts);
+    }
+    
+    // Also observe the DOM for new script additions
+    if ('MutationObserver' in window) {
+      const observer = new MutationObserver(mutations => {
+        for (const mutation of mutations) {
+          if (mutation.type === 'childList') {
+            for (const node of Array.from(mutation.addedNodes)) {
+              if (node.nodeName === 'SCRIPT') {
+                const script = node as HTMLScriptElement;
+                const src = script.src || '';
+                
+                if (patternsToBlock.some(pattern => src.includes(pattern))) {
+                  if (script.parentNode) {
+                    script.parentNode.removeChild(script);
+                    console.log(`Prevented script loading: ${src}`);
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      // Start observing once DOM is loaded
+      document.addEventListener('DOMContentLoaded', () => {
+        observer.observe(document.documentElement, { 
+          childList: true, 
+          subtree: true 
+        });
+      });
+    }
   }
 }
 
@@ -200,19 +366,20 @@ export function preventScriptLoading(urlPatterns: string[]): void {
  * Initialize all performance patches
  */
 export function initPerformanceOptimizations(): void {
-  // Replace Lottie animations with static content
-  replaceLottieAnimations();
+  // Replace Lottie animations with static content or ensure they're loaded
+  if (performanceConfig.replaceLottieWithStatic) {
+    replaceLottieAnimations();
+  } else {
+    ensureLottiePlayerLoaded();
+  }
   
-  // Defer third-party scripts
-  deferThirdPartyScripts();
+  // Defer third-party scripts if configured
+  if (performanceConfig.deferThirdPartyScripts) {
+    deferThirdPartyScripts();
+  }
   
-  // Prevent loading of problematic scripts that we'll handle manually
-  preventScriptLoading([
-    'googletagmanager.com',
-    'clarity.ms',
-    'dotlottie-player',
-    'lottie'
-  ]);
+  // Prevent loading of scripts based on configuration
+  preventScriptLoading(performanceConfig.preventScriptPaths);
 }
 
 // Auto-initialize if this module is directly included

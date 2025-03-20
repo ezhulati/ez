@@ -89,19 +89,6 @@ function App() {
   // Google Calendar client ID
   const googleCalendarClientId = "263378139761-b6ftm7f3qvf7meo3t4mdgk35lskkj442.apps.googleusercontent.com";
 
-  // Ensure dotlottie-player is loaded
-  useEffect(() => {
-    if (!customElements.get('dotlottie-player')) {
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs';
-      script.type = 'module';
-      script.onload = () => {
-        console.log('DotLottie Player loaded dynamically');
-      };
-      document.head.appendChild(script);
-    }
-  }, []);
-
   // Listen for pricing modal open event from AboutMe component
   useEffect(() => {
     const handleOpenPricingModal = () => {
