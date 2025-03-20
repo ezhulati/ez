@@ -16,8 +16,8 @@ const SpeedRoiCalculatorPage = () => {
         {/* Title Tag - 58 characters */}
         <title>Website Speed Calculator | See How Loading Time Affects Revenue</title>
         
-        {/* Meta Description - 160 characters */}
-        <meta name="description" content="Calculate how website speed impacts your revenue. See the potential ROI of improving page load time with our free calculator based on industry conversion data." />
+        {/* Meta Description - 155-160 characters */}
+        <meta name="description" content="Discover how much revenue you're losing from slow page speed. Calculate the financial impact of speed optimization with our free tool based on real conversion data." />
         
         {/* Meta Keywords */}
         <meta name="keywords" content="website speed calculator, page load time, speed impact calculator, conversion rate, site performance, speed optimization, revenue impact, ecommerce speed" />
@@ -27,7 +27,7 @@ const SpeedRoiCalculatorPage = () => {
         
         {/* Open Graph Tags */}
         <meta property="og:title" content="Website Speed Calculator - See Revenue Impact of Loading Times" />
-        <meta property="og:description" content="Calculate the financial impact of improving your website's loading speed. See potential revenue gains from faster load times." />
+        <meta property="og:description" content="Discover how much revenue you're losing from slow page speed. Calculate the financial impact of speed optimization with our free tool based on real conversion data." />
         <meta property="og:url" content={pageUrl} />
         <meta property="og:type" content="website" />
         <meta property="og:image" content={`${websiteUrl}/images/speed-roi-calculator-preview.jpg`} />
@@ -35,7 +35,7 @@ const SpeedRoiCalculatorPage = () => {
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Website Speed Calculator" />
-        <meta name="twitter:description" content="Calculate the revenue impact of improving your website's loading speed" />
+        <meta name="twitter:description" content="Discover how much revenue you're losing from slow page speed. Calculate the financial impact of speed optimization with our free tool." />
         <meta name="twitter:image" content={`${websiteUrl}/images/speed-roi-calculator-preview.jpg`} />
         
         {/* Additional SEO Tags */}
@@ -48,7 +48,7 @@ const SpeedRoiCalculatorPage = () => {
             "@context": "https://schema.org",
             "@type": "WebApplication",
             "name": "Website Speed Impact Calculator",
-            "description": "A calculator that shows the potential revenue impact of improving website loading times, based on industry conversion rate data.",
+            "description": "Discover how much revenue you're losing from slow page speed. Calculate the financial impact of speed optimization based on real industry conversion data.",
             "url": pageUrl,
             "applicationCategory": "BusinessApplication",
             "operatingSystem": "Any",
