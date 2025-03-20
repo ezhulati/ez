@@ -171,7 +171,33 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   // Toggle mobile TOC
   const toggleMobileToc = () => {
     setIsMobileOpen(!isMobileOpen);
+    
+    // Prevent scrolling of the body when TOC is open on mobile
+    if (!isMobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
   };
+  
+  // Close mobile TOC when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (isMobileOpen && tocRef.current && !tocRef.current.contains(e.target as Node)) {
+        setIsMobileOpen(false);
+        document.body.style.overflow = '';
+      }
+    };
+    
+    if (isMobileOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.body.style.overflow = '';
+    };
+  }, [isMobileOpen]);
   
   // If no headings, don't render
   if (headings.length === 0) {
@@ -181,11 +207,11 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   // Classes based on theme (dark/light mode)
   const themeClasses = {
     container: isDarkMode 
-      ? 'bg-gray-900 border-gray-800 text-gray-300'
+      ? 'bg-gray-800 border-gray-700 text-gray-300'
       : 'bg-white border-gray-200 text-gray-700',
     title: isDarkMode ? 'text-white' : 'text-gray-900',
     activeLink: isDarkMode 
-      ? 'text-blue-400 border-blue-500 bg-blue-900/10' 
+      ? 'text-blue-400 border-blue-500 bg-blue-900/20' 
       : 'text-blue-600 border-blue-500 bg-blue-50',
     inactiveLink: isDarkMode
       ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-800/60'
@@ -194,8 +220,11 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
       ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
       : 'bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200',
     mobileTrigger: isDarkMode
-      ? 'bg-gray-800 border-gray-700 text-blue-400'
-      : 'bg-white border-gray-200 text-blue-600'
+      ? 'bg-blue-600 border-blue-700 text-white'
+      : 'bg-blue-600 border-blue-500 text-white',
+    backdrop: isDarkMode
+      ? 'bg-gray-900/80'
+      : 'bg-gray-800/50'
   };
   
   return (
@@ -203,20 +232,31 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
       {/* Mobile TOC Trigger */}
       <button
         onClick={toggleMobileToc}
-        className={`lg:hidden fixed right-4 bottom-20 z-40 p-3 rounded-full shadow-lg border ${themeClasses.mobileTrigger} flex items-center justify-center transition-transform transform ${isMobileOpen ? 'rotate-90' : ''} toc-mobile-trigger`}
+        className={`lg:hidden fixed right-4 bottom-20 z-40 p-3 rounded-full shadow-lg border ${themeClasses.mobileTrigger} flex items-center justify-center transition-transform toc-mobile-trigger`}
         aria-label="Toggle table of contents"
       >
-        {isMobileOpen ? <X size={20} /> : <List size={20} />}
+        <List size={20} />
       </button>
+      
+      {/* Mobile backdrop overlay */}
+      {isMobileOpen && (
+        <div 
+          className={`lg:hidden fixed inset-0 z-40 ${themeClasses.backdrop} backdrop-blur-sm transition-opacity toc-backdrop`}
+          onClick={() => {
+            setIsMobileOpen(false);
+            document.body.style.overflow = '';
+          }}
+        ></div>
+      )}
     
       {/* Main TOC Container */}
       <div 
         ref={tocRef}
-        className={`${containerClassName} ${themeClasses.container} border rounded-lg overflow-hidden shadow-md transition-all duration-300
+        className={`${containerClassName} ${themeClasses.container} border rounded-lg overflow-hidden shadow-lg transition-all duration-300
           lg:sticky lg:top-24 lg:max-h-[calc(100vh-120px)] lg:max-w-xs lg:w-full lg:overflow-y-auto
           ${isCollapsed ? 'lg:max-h-14' : ''}
           ${isMobileOpen 
-            ? 'fixed bottom-4 left-4 right-4 z-50 max-h-[70vh] overflow-y-auto rounded-lg' 
+            ? 'fixed bottom-16 left-4 right-4 z-50 max-h-[70vh] overflow-y-auto rounded-lg toc-mobile-open animate-slide-up' 
             : 'hidden lg:block'}
         `}
       >
@@ -226,6 +266,19 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
             <Menu size={16} className="mr-2" />
             {title}
           </h2>
+          
+          {/* Mobile close button */}
+          {isMobileOpen && (
+            <button
+              onClick={toggleMobileToc}
+              className={`lg:hidden p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors`}
+              aria-label="Close table of contents"
+            >
+              <X size={18} />
+            </button>
+          )}
+          
+          {/* Desktop collapse button */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className={`p-1.5 rounded ${themeClasses.toggleButton} transition-colors lg:block hidden`}
