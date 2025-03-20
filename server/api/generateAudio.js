@@ -3,8 +3,13 @@ import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 import { createHash } from 'crypto';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
+
+// Setup correct __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ElevenLabs API configuration
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || 'sk_e1353b15707f78a2cf2c4f0efd363430add661f80b03792b';
@@ -12,7 +17,7 @@ const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1';
 const VOICE_ID = 'pNInz6obpgDQGcFmaJgB'; // Adam voice - Professional male voice
 
 // Create cache directory if it doesn't exist
-const CACHE_DIR = path.join(process.cwd(), 'public', 'audio-cache');
+const CACHE_DIR = path.join(__dirname, '../../public/audio-cache');
 if (!fs.existsSync(CACHE_DIR)) {
   fs.mkdirSync(CACHE_DIR, { recursive: true });
 }
@@ -29,6 +34,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
+    console.log(`Generating audio for post: ${postId} - ${title}`);
+    
     // Create a unique filename based on the post ID and content hash
     const contentHash = createHash('md5').update(text).digest('hex');
     const filename = `${postId}-${contentHash}.mp3`;
@@ -74,6 +81,7 @@ export default async function handler(req, res) {
 
     // Save the audio file to the cache directory
     fs.writeFileSync(filePath, response.data);
+    console.log(`Audio file saved to ${filePath}`);
     
     // Get the audio duration
     const duration = estimateAudioDuration(filePath);

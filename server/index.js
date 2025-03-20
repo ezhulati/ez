@@ -4,6 +4,7 @@ import fs from 'fs';
 import contentful from 'contentful';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
+import generateAudio from './api/generateAudio.js';
 
 const { createClient } = contentful;
 
@@ -18,8 +19,20 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware for JSON requests
+app.use(express.json());
+
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../dist')));
+
+// Create audio-cache directory
+const AUDIO_CACHE_DIR = path.join(__dirname, '../public/audio-cache');
+if (!fs.existsSync(AUDIO_CACHE_DIR)) {
+  fs.mkdirSync(AUDIO_CACHE_DIR, { recursive: true });
+}
+
+// Serve cached audio files
+app.use('/audio-cache', express.static(path.join(__dirname, '../public/audio-cache')));
 
 // Read the HTML file once at startup
 let indexHTML = fs.readFileSync(path.join(__dirname, '../dist/index.html'), 'utf8');
@@ -33,6 +46,9 @@ const client = createClient({
   accessToken: process.env.VITE_CONTENTFUL_ACCESS_TOKEN,
   environment: process.env.VITE_CONTENTFUL_ENVIRONMENT || 'master'
 });
+
+// Register the generateAudio API endpoint
+app.post('/api/generateAudio', generateAudio);
 
 // Helper to safely clean strings for HTML
 const escapeHTML = (str) => {
