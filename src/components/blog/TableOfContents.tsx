@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { List, ChevronDown, ChevronUp, Menu, X } from 'lucide-react';
+import React, { useState, useEffect, useRef, TouchEvent } from 'react';
+import { List, ChevronDown, ChevronUp, Menu, X, ChevronUp as SwipeUpIcon } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 
 interface TableOfContentsProps {
@@ -33,6 +33,13 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
   const [isScrolling, setIsScrolling] = useState<boolean>(false);
+  
+  // Swipe related states
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [touchCurrentY, setTouchCurrentY] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [swipeProgress, setSwipeProgress] = useState<number>(0);
+  
   const observerRef = useRef<IntersectionObserver | null>(null);
   const tocRef = useRef<HTMLDivElement>(null);
   const { isDarkMode } = useAppContext();
@@ -199,6 +206,49 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
     };
   }, [isMobileOpen]);
   
+  // Touch event handlers for swipe-to-dismiss
+  const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+    setTouchStartY(e.touches[0].clientY);
+    setTouchCurrentY(e.touches[0].clientY);
+    setIsDragging(true);
+  };
+  
+  const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
+    if (!isDragging || touchStartY === null) return;
+    
+    const currentY = e.touches[0].clientY;
+    setTouchCurrentY(currentY);
+    
+    // Calculate swipe distance and direction
+    const deltaY = currentY - touchStartY;
+    
+    // Only allow swiping down to close
+    if (deltaY > 0) {
+      // Calculate progress percentage (0-100) for animation
+      const containerHeight = tocRef.current?.offsetHeight || 300;
+      const progress = Math.min(100, (deltaY / containerHeight) * 100);
+      setSwipeProgress(progress);
+    }
+  };
+  
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    
+    setIsDragging(false);
+    
+    // Determine if swipe was significant enough to close
+    // If swipe progress is greater than 20%, close the TOC
+    if (swipeProgress > 20) {
+      setIsMobileOpen(false);
+      document.body.style.overflow = '';
+    }
+    
+    // Reset swipe progress
+    setSwipeProgress(0);
+    setTouchStartY(null);
+    setTouchCurrentY(null);
+  };
+  
   // If no headings, don't render
   if (headings.length === 0) {
     return null;
@@ -224,8 +274,16 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
       : 'bg-blue-600 border-blue-500 text-white',
     backdrop: isDarkMode
       ? 'bg-gray-900/80'
-      : 'bg-gray-800/50'
+      : 'bg-gray-800/50',
+    swipeIndicator: isDarkMode
+      ? 'bg-gray-600'
+      : 'bg-gray-300'
   };
+  
+  // Calculate transform style for swipe effect
+  const swipeTransform = isDragging && swipeProgress > 0
+    ? { transform: `translateY(${swipeProgress}%)` }
+    : {};
   
   return (
     <>
@@ -246,6 +304,9 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
             setIsMobileOpen(false);
             document.body.style.overflow = '';
           }}
+          style={{ 
+            opacity: isDragging ? 1 - (swipeProgress / 100) : 1 
+          }}
         ></div>
       )}
     
@@ -259,7 +320,18 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
             ? 'fixed bottom-16 left-4 right-4 z-50 max-h-[70vh] overflow-y-auto rounded-lg toc-mobile-open animate-slide-up' 
             : 'hidden lg:block'}
         `}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={swipeTransform}
       >
+        {/* Swipe handle indicator for mobile */}
+        {isMobileOpen && (
+          <div className="lg:hidden flex justify-center py-1.5 touch-none">
+            <div className={`w-12 h-1 rounded-full ${themeClasses.swipeIndicator}`}></div>
+          </div>
+        )}
+        
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10 bg-inherit">
           <h2 className={`text-base font-semibold ${themeClasses.title} flex items-center`}>
@@ -319,6 +391,14 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
             })}
           </ul>
         </nav>
+        
+        {/* Swipe up to close indicator for mobile */}
+        {isMobileOpen && (
+          <div className="lg:hidden flex justify-center items-center py-3 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-800">
+            <SwipeUpIcon size={14} className="mr-2" />
+            <span>Swipe down to close</span>
+          </div>
+        )}
       </div>
     </>
   );

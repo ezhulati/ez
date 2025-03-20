@@ -410,6 +410,26 @@ text:not([class^="recharts"]):only-child {
 .toc-mobile-open {
   box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
   border-width: 2px;
+  will-change: transform;
+  touch-action: pan-y;
+}
+
+/* Swipe indicator styles */
+.toc-mobile-open .touch-none {
+  pointer-events: none;
+}
+
+/* Enhanced mobile TOC transitions */
+@media (max-width: 1023px) {
+  .toc-mobile-open {
+    transition: transform 0.2s ease-out;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+  }
+  
+  .toc-backdrop {
+    transition: opacity 0.2s ease-out;
+  }
 }
 
 /* Enhance the mobile trigger button for better visibility */
