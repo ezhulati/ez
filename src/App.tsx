@@ -42,6 +42,10 @@ const Blog = lazy(() => import('./pages/Blog'));
 const BlogPost = lazy(() => import('./pages/BlogPost'));
 const Search = lazy(() => import('./pages/Search'));
 
+// Tools related pages - loaded only when needed
+const Tools = lazy(() => import('./pages/Tools'));
+const SpeedRoiCalculator = lazy(() => import('./pages/SpeedRoiCalculator'));
+
 // Loading fallback for lazy components
 const ComponentLoader = () => (
   <div className="flex justify-center items-center h-full min-h-[200px]">
@@ -52,12 +56,13 @@ const ComponentLoader = () => (
 // Empty fallback for non-critical components
 const EmptyFallback = () => <></>;
 
-// Navigation items - Updated to include blog
+// Navigation items - Updated to include blog and tools
 const navItems = [
   { label: 'Services', href: '#services' },
   { label: 'Process', href: '#process' },
   { label: 'About', href: '#about' },
   { label: 'Blog', href: '/blog' },
+  { label: 'Tools', href: '/tools' },
   { label: 'Contact', href: '#contact' }
 ];
 
@@ -214,6 +219,8 @@ function App() {
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/search" element={<Search />} />
+              <Route path="/tools" element={<Tools />} />
+              <Route path="/tools/speed-roi-calculator" element={<SpeedRoiCalculator />} />
             </Routes>
           </Suspense>
         </main>
@@ -251,6 +258,7 @@ function App() {
                 <a href="/#process" className="hover:text-blue-500 transition-colors">Process</a>
                 <a href="/#about" className="hover:text-blue-500 transition-colors">About</a>
                 <a href="/blog" className="hover:text-blue-500 transition-colors">Blog</a>
+                <a href="/tools" className="hover:text-blue-500 transition-colors">Tools</a>
                 <a href="/#contact" className="hover:text-blue-500 transition-colors">Contact</a>
                 <a href="/privacy.html" className="hover:text-blue-500 transition-colors">Privacy Policy</a>
                 

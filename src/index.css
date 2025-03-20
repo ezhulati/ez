@@ -262,3 +262,66 @@
     @apply py-12 sm:py-16;
   }
 }
+
+/* Chart fixes */
+.chart-container {
+  overflow: visible !important;
+}
+
+.chart-container text {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.recharts-wrapper {
+  overflow: visible !important;
+}
+
+.recharts-surface {
+  overflow: visible !important;
+}
+
+/* Hide unwanted text */
+.recharts-default-text,
+.recharts-text[text-anchor="middle"][x="0"][y="0"],
+.recharts-text[text-anchor="start"][y="5"],
+.recharts-text[text-anchor="start"][x="0"],
+.recharts-text:not([font-size]),
+text[text-anchor="start"][y="5"],
+text[text-anchor="start"][x="0"],
+text:not([font-size]),
+text:empty,
+.recharts-surface > text:not(.recharts-text),
+text:not([class^="recharts"]):not([fill*="#"]) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Specific fix for "get" and "rent" text */
+text:not([class^="recharts"]):empty,
+text:not([class^="recharts"]):only-child {
+  display: none !important;
+}
+
+/* Force show area plot */
+.recharts-curve.recharts-area-area,
+.recharts-curve.recharts-area-curve {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure chart labels are visible */
+.recharts-reference-line {
+  overflow: visible !important;
+  z-index: 10;
+}
+
+.current-label, .target-label {
+  overflow: visible !important;
+  z-index: 100;
+}
+
+.target-label {
+  pointer-events: none;
+}
