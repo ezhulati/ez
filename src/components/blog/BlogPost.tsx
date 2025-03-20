@@ -20,7 +20,6 @@ import AnimatedSection from '../AnimatedSection';
 import PageTransition from '../PageTransition';
 import BlogSeo from '../BlogSeo';
 import TableOfContents from './TableOfContents';
-import AudioPlayer from './AudioPlayer';
 
 // Configure Contentful Rich Text options
 const richTextOptions = (isDark: boolean) => ({
@@ -666,14 +665,6 @@ const BlogPost = () => {
               <span>{readingTime} min read</span>
             </div>
           </div>
-          
-          {/* Audio Player */}
-          <AudioPlayer 
-            postId={post.sys.id}
-            postTitle={post.fields.title || 'Blog Post'}
-            postContent={post.fields.body || ''}
-            className="blog-audio-player"
-          />
           
           {/* Featured Image with enhanced styling */}
           <div className="rounded-xl overflow-hidden mb-10 shadow-lg">
