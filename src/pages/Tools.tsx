@@ -181,8 +181,8 @@ const Tools = () => {
               </div>
             </div>
 
-            {/* Placeholder for future tools */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-100 dark:border-gray-700 flex flex-col opacity-50">
+            {/* Conversion Rate Calculator - Updated from "coming soon" to active link */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden border border-gray-100 dark:border-gray-700 flex flex-col">
               <div className="p-4 sm:p-6 flex-grow">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-4">
                   <LineChart className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
@@ -191,13 +191,17 @@ const Tools = () => {
                   Conversion Rate Calculator
                 </h3>
                 <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-                  Coming soon - Estimate your conversion rate improvements and revenue impact.
+                  Estimate your conversion rate improvements and revenue impact of optimization efforts.
                 </p>
               </div>
               <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-1 sm:pt-2">
-                <span className="inline-flex items-center text-gray-400 dark:text-gray-500 font-medium text-sm sm:text-base">
-                  <span>Coming soon</span>
-                </span>
+                <Link 
+                  to="/tools/conversion-rate-calculator" 
+                  className="inline-flex items-center text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-medium"
+                >
+                  <span>Try the calculator</span>
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
               </div>
             </div>
 

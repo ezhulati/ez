@@ -24,6 +24,8 @@ declare global {
         style?: React.CSSProperties;
         background?: string;
         speed?: string;
+        mode?: string;
+        renderer?: string;
       };
     }
   }
@@ -48,6 +50,7 @@ const Search = lazy(() => import('./pages/Search'));
 // Tools related pages - loaded only when needed
 const Tools = lazy(() => import('./pages/Tools'));
 const SpeedRoiCalculator = lazy(() => import('./pages/SpeedRoiCalculator'));
+const ConversionRateCalculator = lazy(() => import('./pages/ConversionRateCalculator'));
 
 // Loading fallback for lazy components
 const ComponentLoader = () => (
@@ -218,6 +221,7 @@ function App() {
               <Route path="/search" element={<Search />} />
               <Route path="/tools" element={<Tools />} />
               <Route path="/tools/speed-roi-calculator" element={<SpeedRoiCalculator />} />
+              <Route path="/tools/conversion-rate-calculator" element={<ConversionRateCalculator />} />
             </Routes>
           </Suspense>
         </main>
