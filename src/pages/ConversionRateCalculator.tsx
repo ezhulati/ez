@@ -13,34 +13,40 @@ const ConversionRateCalculatorPage = () => {
   return (
     <>
       <Helmet>
-        {/* Title Tag - optimized for SEO */}
-        <title>Conversion Rate Calculator | Estimate Revenue Impact of CRO</title>
+        {/* Title Tag - optimized for SEO (61 characters) */}
+        <title>Conversion Rate Calculator | Maximize Your Website's Revenue</title>
         
-        {/* Meta Description - optimized for SEO and click-through */}
-        <meta name="description" content="Calculate the revenue impact of improving your conversion rate. See how small improvements in your website's conversion rate can lead to significant revenue gains." />
+        {/* Meta Description - optimized for SEO and click-through (160 characters) */}
+        <meta name="description" content="Calculate how improving your conversion rate impacts revenue growth. See the exact financial value of optimizing your website and turn small CRO improvements into significant profits." />
         
         {/* Meta Keywords */}
-        <meta name="keywords" content="conversion rate calculator, CRO calculator, conversion optimization ROI, revenue impact calculator, marketing ROI, conversion rate optimization, ecommerce conversion, digital marketing calculator" />
+        <meta name="keywords" content="conversion rate calculator, CRO calculator, conversion optimization ROI, revenue impact calculator, conversion rate optimization, ecommerce conversion calculator, website revenue calculator, CRO ROI, marketing ROI calculator, digital marketing calculator, AB test calculator, conversion lift calculator" />
         
         {/* Canonical URL */}
         <link rel="canonical" href={pageUrl} />
         
         {/* Open Graph Tags */}
-        <meta property="og:title" content="Conversion Rate Calculator - See Revenue Impact of CRO" />
-        <meta property="og:description" content="Calculate the revenue impact of improving your conversion rate. See how small improvements in your website's conversion rate can lead to significant revenue gains." />
+        <meta property="og:title" content="Conversion Rate Calculator | See Your Revenue Potential" />
+        <meta property="og:description" content="Free calculator that shows exactly how much revenue you're leaving on the table with your current conversion rate. See how small CRO improvements create big profits." />
         <meta property="og:url" content={pageUrl} />
         <meta property="og:type" content="website" />
         <meta property="og:image" content={`${websiteUrl}/images/conversion-rate-calculator-preview.jpg`} />
+        <meta property="og:site_name" content="Enri Zhulati" />
         
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Conversion Rate Calculator" />
-        <meta name="twitter:description" content="Calculate the revenue impact of improving your conversion rate. See how small improvements can lead to significant revenue gains." />
+        <meta name="twitter:title" content="Calculate Your Website's Revenue Potential" />
+        <meta name="twitter:description" content="This free tool shows exactly how much additional revenue you could be making with improved conversion rates. Try it now!" />
         <meta name="twitter:image" content={`${websiteUrl}/images/conversion-rate-calculator-preview.jpg`} />
+        <meta name="twitter:site" content="@enrizhulati" />
+        <meta name="twitter:creator" content="@enrizhulati" />
         
         {/* Additional SEO Tags */}
         <meta name="robots" content="index, follow" />
         <meta name="author" content="Enri Zhulati" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="application-name" content="Conversion Rate Calculator" />
+        <meta name="rating" content="General" />
         
         {/* Schema.org JSON-LD for WebApplication */}
         <script type="application/ld+json">
@@ -110,18 +116,49 @@ const ConversionRateCalculatorPage = () => {
               "price": "0"
             },
             "featureList": [
-              "Calculate revenue impact of conversion rate improvements",
-              "Visualize financial benefits of CRO",
-              "Estimate additional sales from improved conversions",
-              "Compare current vs target conversion scenarios",
-              "Calculate marketing ROI for conversion optimization"
+              "Calculate the exact revenue impact of improving your conversion rate",
+              "Visualize before and after revenue scenarios with interactive charts",
+              "Estimate monthly and annual financial gains from CRO initiatives",
+              "Calculate ROI on conversion optimization investments",
+              "Compare current vs target conversion rates with detailed metrics",
+              "Determine additional sales generated from improved conversions"
             ],
-            "keywords": "conversion rate calculator, CRO calculator, conversion optimization ROI, revenue impact, marketing ROI",
+            "keywords": "conversion rate calculator, CRO calculator, conversion optimization ROI, revenue impact, marketing ROI, website optimization, ecommerce conversion",
             "contentUrl": pageUrl,
+            "description": "This free calculator helps businesses understand exactly how much additional revenue they can generate by improving their website's conversion rate. Perfect for ecommerce stores, lead generation sites, and marketing teams planning CRO initiatives.",
             "mainEntityOfPage": {
               "@type": "WebPage",
               "name": "Conversion Rate Calculator",
-              "description": "Calculate how conversion rate improvements impact your revenue. See the potential ROI of conversion rate optimization."
+              "description": "Calculate how conversion rate improvements impact your revenue. See the potential ROI of conversion rate optimization efforts."
+            }
+          })}
+        </script>
+
+        {/* Additional Schema.org structured data for Calculator */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "Conversion Rate Calculator",
+            "description": "Calculate how improving your conversion rate impacts revenue growth. See the exact financial value of optimizing your website and turn small CRO improvements into significant profits.",
+            "url": pageUrl,
+            "mainEntity": {
+              "@type": "InteractiveWeb",
+              "name": "Conversion Rate Calculator Tool",
+              "alternateName": "CRO Revenue Calculator",
+              "description": "Free calculator tool that helps businesses understand the financial impact of improving their website's conversion rate.",
+              "author": {
+                "@type": "Person",
+                "name": "Enri Zhulati",
+                "url": websiteUrl
+              },
+              "inLanguage": "en-US",
+              "isAccessibleForFree": true,
+              "keywords": "conversion rate calculator, CRO ROI, revenue impact",
+              "audience": {
+                "@type": "Audience",
+                "name": "Business owners, marketers, ecommerce managers"
+              }
             }
           })}
         </script>
