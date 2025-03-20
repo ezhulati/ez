@@ -10,6 +10,9 @@ import SchemaMarkup from './SchemaMarkup';
 import MobileNavigation from './components/MobileNavigation';
 import BackToTop from './components/BackToTop';
 
+// Make sure Lottie animations are initialized
+import { ensureLottiePlayerLoaded } from './patches/performance-patches';
+
 // Add dotlottie-player type definition
 declare global {
   namespace JSX {
@@ -88,6 +91,13 @@ function App() {
   
   // Google Calendar client ID
   const googleCalendarClientId = "263378139761-b6ftm7f3qvf7meo3t4mdgk35lskkj442.apps.googleusercontent.com";
+
+  // Initialize Lottie animations when the component mounts
+  useEffect(() => {
+    if (isHomePage) {
+      ensureLottiePlayerLoaded();
+    }
+  }, [isHomePage]);
 
   // Listen for pricing modal open event from AboutMe component
   useEffect(() => {
@@ -295,6 +305,27 @@ const HomePage = () => {
   const { isMobile } = useScreenSize();
   const { setIsResultsOpen, setIsScheduleOpen, setIsPricingOpen } = useAppContext();
   
+  // Initialize Lottie players on mount
+  useEffect(() => {
+    // Ensure Lottie animations are loaded
+    ensureLottiePlayerLoaded();
+    
+    // Additional initialization for any Lottie player
+    const lottiePlayers = document.querySelectorAll('dotlottie-player');
+    if (lottiePlayers.length > 0) {
+      lottiePlayers.forEach(player => {
+        try {
+          // Force play
+          if ((player as any).play) {
+            (player as any).play();
+          }
+        } catch (e) {
+          console.error('Error playing Lottie animation:', e);
+        }
+      });
+    }
+  }, []);
+  
   return (
     <>
       {/* Hero Section */}
@@ -359,6 +390,10 @@ const HomePage = () => {
                       style={{ width: '100%', height: '400px', borderRadius: '16px' }}
                       loop
                       autoplay
+                      mode="normal"
+                      renderer="svg"
+                      aria-label="Animation showing web development concepts"
+                      id="homepage-lottie"
                     ></dotlottie-player>
                   </div>
                 </div>

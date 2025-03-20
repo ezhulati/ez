@@ -7,7 +7,7 @@
 
 // Configuration settings for performance optimizations
 export const performanceConfig = {
-  // Set to false to enable Lottie animations (better user experience but worse performance)
+  // Always set to false to ensure Lottie animations work correctly
   replaceLottieWithStatic: false,
   
   // Set to false to load all third-party scripts immediately
@@ -90,67 +90,146 @@ export function replaceLottieAnimations(): void {
 export function ensureLottiePlayerLoaded(): void {
   if (typeof document === 'undefined') return;
   
-  // Define a function to load the Lottie player
-  const loadLottiePlayer = () => {
-    if (!customElements.get('dotlottie-player')) {
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs';
-      script.type = 'module';
-      script.id = 'lottie-player-script';
-      
-      // Set high priority and timeout to ensure it loads quickly
-      script.setAttribute('fetchpriority', 'high');
-      
-      script.onload = () => {
-        console.log('DotLottie Player loaded successfully');
-        // Set flag indicating the player is loaded
-        (window as any).LOTTIE_PLAYER_LOADED = true;
-        
-        // Initialize all Lottie players that might be waiting
-        initializeLottiePlayers();
-      };
-      
-      document.head.appendChild(script);
-    }
-  };
+  // Set a flag to indicate we're actively loading
+  (window as any).LOTTIE_LOADING = true;
   
-  // Function to initialize all Lottie players with autoplay
+  // Function to initialize all Lottie players
   const initializeLottiePlayers = () => {
-    const players = document.querySelectorAll('dotlottie-player[autoplay]');
+    console.log('Initializing Lottie players');
+    const players = document.querySelectorAll('dotlottie-player');
     
     players.forEach(player => {
       // Force a reload or play action on each player
       try {
         const playerElement = player as any;
+        
+        // Handle already loaded players
+        if (playerElement.shadowRoot && 
+            playerElement.shadowRoot.querySelector('dotlottie-player-internal')) {
+          console.log('Lottie player already loaded, playing...');
+          if (playerElement.play) {
+            playerElement.play();
+          }
+          return;
+        }
+        
+        // For players that need initialization
         if (playerElement.load) {
+          console.log('Loading Lottie player...');
           playerElement.load();
         }
-        if (playerElement.play) {
+        
+        // For players with autoplay attribute
+        if (player.hasAttribute('autoplay') && playerElement.play) {
+          console.log('Playing Lottie animation...');
           playerElement.play();
         }
       } catch (error) {
         console.error('Error initializing Lottie player:', error);
       }
     });
+    
+    // Set flag indicating players are initialized
+    (window as any).LOTTIE_INITIALIZED = true;
   };
   
-  // Load immediately if document is ready
-  if (document.readyState !== 'loading') {
-    loadLottiePlayer();
+  // Define a function to load the Lottie player
+  const loadLottiePlayer = () => {
+    // Skip if already defined
+    if (customElements.get('dotlottie-player')) {
+      console.log('DotLottie Player already defined, initializing players...');
+      initializeLottiePlayers();
+      return;
+    }
+    
+    console.log('Loading DotLottie Player script...');
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs';
+    script.type = 'module';
+    script.id = 'lottie-player-script';
+    script.setAttribute('fetchpriority', 'high');
+    
+    script.onload = () => {
+      console.log('DotLottie Player script loaded successfully');
+      // Set flag indicating the player is loaded
+      (window as any).LOTTIE_PLAYER_LOADED = true;
+      
+      // Give a short delay for the component to register
+      setTimeout(() => {
+        initializeLottiePlayers();
+      }, 50);
+    };
+    
+    document.head.appendChild(script);
+  };
+  
+  // Execute initialization based on page state
+  const executeInitialization = () => {
+    if ((window as any).LOTTIE_INITIALIZED) {
+      console.log('Lottie already initialized, skipping...');
+      return;
+    }
+    
+    // Check if script is already in the page
+    const existingScript = document.querySelector('script[src*="dotlottie-player"]');
+    if (existingScript) {
+      console.log('Found existing Lottie script, waiting for it to load...');
+      
+      if (customElements.get('dotlottie-player')) {
+        console.log('Component already defined, initializing players...');
+        initializeLottiePlayers();
+      } else {
+        // Wait for the script to finish loading
+        existingScript.addEventListener('load', () => {
+          console.log('Existing script loaded, initializing players...');
+          // Small delay to ensure component is registered
+          setTimeout(initializeLottiePlayers, 50);
+        });
+        
+        // Fallback in case the load event doesn't fire
+        setTimeout(() => {
+          if (!customElements.get('dotlottie-player')) {
+            console.log('Fallback: Forcing Lottie script load...');
+            loadLottiePlayer();
+          } else {
+            initializeLottiePlayers();
+          }
+        }, 1000);
+      }
+    } else {
+      // No script found, load it
+      loadLottiePlayer();
+    }
+  };
+  
+  // Execute with appropriate timing
+  if (document.readyState === 'loading') {
+    // Page is still loading, wait for DOM
+    document.addEventListener('DOMContentLoaded', executeInitialization);
   } else {
-    // Otherwise attach to DOMContentLoaded
-    document.addEventListener('DOMContentLoaded', loadLottiePlayer);
+    // DOM already loaded, execute now
+    executeInitialization();
   }
   
   // Also attach to load event as a fallback
   window.addEventListener('load', () => {
-    // Double check that the Lottie player has been loaded
-    if (!customElements.get('dotlottie-player')) {
-      loadLottiePlayer();
-    } else {
-      // If already loaded, just initialize any players
-      initializeLottiePlayers();
-    }
+    // Double check initialization after everything is loaded
+    setTimeout(() => {
+      if (!(window as any).LOTTIE_INITIALIZED) {
+        console.log('Lottie not initialized after page load, retrying...');
+        executeInitialization();
+      } else {
+        // Even if initialized, ensure all players are playing
+        const players = document.querySelectorAll('dotlottie-player[autoplay]');
+        players.forEach(player => {
+          try {
+            (player as any).play();
+          } catch (e) {
+            // Ignore errors
+          }
+        });
+      }
+    }, 500);
   });
 }
 
@@ -387,3 +466,6 @@ if (typeof window !== 'undefined') {
   // Initialize after a tiny delay to ensure it runs after other scripts
   setTimeout(initPerformanceOptimizations, 0);
 }
+
+// Initialize Lottie immediately
+ensureLottiePlayerLoaded();
