@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Volume2 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 
@@ -16,53 +16,40 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   className = '' 
 }) => {
   const [showPlayer, setShowPlayer] = useState(false);
-  const [playerLoaded, setPlayerLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { isDarkMode } = useAppContext();
   
-  // Effect that runs after the component mounts to initialize the ElevenLabs player
-  useEffect(() => {
-    if (showPlayer && !playerLoaded) {
-      // If window.ElevenLabsAudioNativeHelper is defined, the script has loaded
-      if (window.ElevenLabsAudioNativeHelper && 
-          typeof window.ElevenLabsAudioNativeHelper.initializeAudioNativeWidgets === 'function') {
-        // Initialize the widget - this is a direct call to their API
-        try {
-          window.ElevenLabsAudioNativeHelper.initializeAudioNativeWidgets();
-          console.log('ElevenLabs AudioNative widgets initialized');
-          setPlayerLoaded(true);
-          setIsLoading(false);
-        } catch (error) {
-          console.error('Error initializing ElevenLabs player:', error);
-          setIsLoading(false);
-        }
+  // Extract a short excerpt from the content
+  const extractTextExcerpt = () => {
+    try {
+      let textContent = '';
+      
+      if (typeof postContent === 'string') {
+        textContent = postContent;
       } else {
-        // If the script hasn't loaded yet, try again after a short delay
-        console.log('ElevenLabs script not loaded yet, retrying in 1 second...');
-        const timer = setTimeout(() => {
-          // Try to manually initialize
-          const script = document.createElement('script');
-          script.src = 'https://elevenlabs.io/player/audioNativeHelper.js';
-          script.type = 'text/javascript';
-          script.onload = () => {
-            if (window.ElevenLabsAudioNativeHelper) {
-              window.ElevenLabsAudioNativeHelper.initializeAudioNativeWidgets();
-              setPlayerLoaded(true);
-              setIsLoading(false);
-            }
-          };
-          document.head.appendChild(script);
-        }, 1000);
-        
-        return () => clearTimeout(timer);
+        textContent = String(postContent).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
       }
+      
+      // Create a short excerpt (first 100 characters)
+      return textContent.substring(0, 100) + '...';
+    } catch (error) {
+      console.error('Error extracting text excerpt:', error);
+      return postTitle;
     }
-  }, [showPlayer, playerLoaded]);
+  };
   
   const handleShowPlayer = () => {
     setIsLoading(true);
-    setShowPlayer(true);
+    
+    // Set a timeout to allow the loading state to show
+    setTimeout(() => {
+      setShowPlayer(true);
+      setIsLoading(false);
+    }, 500);
   };
+  
+  // Generate a unique ID for the player iframe
+  const iframeId = `elevenlabs-player-${postId.substring(0, 8)}`;
   
   // Classes based on theme (dark/light mode)
   const themeClasses = {
@@ -95,39 +82,22 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
         </div>
       )}
       
-      {/* ElevenLabs AudioNative Widget */}
+      {/* Direct ElevenLabs iframe embedding - simpler and more reliable */}
       {showPlayer && (
-        <div 
-          className="w-full" 
-          dangerouslySetInnerHTML={{
-            __html: `
-              <div 
-                id="elevenlabs-audionative-widget" 
-                data-height="90" 
-                data-width="100%" 
-                data-frameborder="no" 
-                data-scrolling="no" 
-                data-text="${postTitle}"
-                data-publicuserid="0590e54e519cf1a3002d7c0178c75570718d278609b0a051afe42f936dcb04cc"
-                data-playerurl="https://elevenlabs.io/player/index.html"
-              >
-                Loading the <a href="https://elevenlabs.io/text-to-speech" target="_blank" rel="noopener">Elevenlabs Text to Speech</a> AudioNative Player...
-              </div>
-            `
-          }}
-        />
+        <div className="w-full">
+          <iframe 
+            id={iframeId}
+            src={`https://elevenlabs.io/text-to-speech/embed/?text=${encodeURIComponent(extractTextExcerpt())}`}
+            width="100%" 
+            height="100"
+            style={{border: 'none', borderRadius: '8px'}}
+            allow="autoplay"
+            title="ElevenLabs Text to Speech Player"
+          ></iframe>
+        </div>
       )}
     </div>
   );
 };
-
-// Add this declaration to make TypeScript happy with the global ElevenLabsAudioNativeHelper
-declare global {
-  interface Window {
-    ElevenLabsAudioNativeHelper?: {
-      initializeAudioNativeWidgets: () => void;
-    };
-  }
-}
 
 export default AudioPlayer; 
