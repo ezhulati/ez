@@ -325,3 +325,109 @@ text:not([class^="recharts"]):only-child {
 .target-label {
   pointer-events: none;
 }
+
+/* Table of Contents Styles */
+.toc-nav ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.toc-nav li {
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
+}
+
+.toc-nav a {
+  position: relative;
+  display: block;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.toc-nav a:hover {
+  transform: translateX(2px);
+}
+
+.toc-nav a.active {
+  font-weight: 500;
+}
+
+/* Add a subtle line animation for active state */
+.toc-nav a.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background-color: currentColor;
+  transform-origin: left center;
+  animation: toc-line-fade 0.3s ease forwards;
+}
+
+@keyframes toc-line-fade {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* Scrollbar styles for the TOC */
+.toc-nav::-webkit-scrollbar {
+  width: 3px;
+}
+
+.toc-nav::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+.toc-nav::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.dark .toc-nav::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark .toc-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Mobile TOC button pulse animation to indicate presence */
+@media (max-width: 1023px) {
+  .blog-content h2,
+  .blog-content h3,
+  .blog-content h4 {
+    scroll-margin-top: 100px;
+  }
+  
+  @keyframes toc-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+  }
+  
+  .toc-mobile-trigger {
+    animation: toc-pulse 2s infinite;
+  }
+}
+
+/* Add scroll margin to headings */
+.blog-content h2,
+.blog-content h3,
+.blog-content h4 {
+  scroll-margin-top: 120px;
+}

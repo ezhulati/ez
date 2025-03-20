@@ -19,6 +19,7 @@ import { useAppContext } from '../../context/AppContext';
 import AnimatedSection from '../AnimatedSection';
 import PageTransition from '../PageTransition';
 import BlogSeo from '../BlogSeo';
+import TableOfContents from './TableOfContents';
 
 // Configure Contentful Rich Text options
 const richTextOptions = (isDark: boolean) => ({
@@ -573,7 +574,7 @@ const BlogPost = () => {
         authorName: post?.fields.author?.fields?.name || 'Enri Zhulati',
       }} />
       
-      <article className="max-w-4xl mx-auto px-4 py-12 pt-16 lg:pt-28">
+      <article className="max-w-6xl mx-auto px-4 py-12 pt-16 lg:pt-28">
         {/* Back link with improved styling */}
         <div className="mb-10">
           <Link 
@@ -704,11 +705,23 @@ const BlogPost = () => {
             </button>
           </div>
           
-          {/* Main content area with enhanced styling */}
-          <div 
-            className="my-8 p-8 sm:p-10 border border-gray-100 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-900 shadow-md"
-          >
-            {renderContent()}
+          {/* Content area with Table of Contents */}
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Table of Contents - Desktop Sidebar */}
+            <div className="order-2 lg:order-1 lg:w-1/4">
+              <TableOfContents 
+                contentSelector=".blog-content"
+                title="In this article"
+                offset={100}
+              />
+            </div>
+            
+            {/* Main content area with enhanced styling */}
+            <div 
+              className="order-1 lg:order-2 lg:w-3/4 my-8 p-8 sm:p-10 border border-gray-100 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-900 shadow-md blog-content"
+            >
+              {renderContent()}
+            </div>
           </div>
           
           {/* Add author bio section */}
