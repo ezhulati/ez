@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Volume2, VolumeX, SkipForward, SkipBack } from 'lucide-react';
+import { Volume2 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 
 interface AudioPlayerProps {
@@ -15,250 +15,97 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   postContent,
   className = '' 
 }) => {
-  // Audio player state
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(0.75);
-  const [audioGenerated, setAudioGenerated] = useState(false);
-  const [showPlayer, setShowPlayer] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  
-  // Refs
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const animationRef = useRef<number | null>(null);
-  const progressBarRef = useRef<HTMLInputElement | null>(null);
-  const volumeBarRef = useRef<HTMLInputElement | null>(null);
-  
-  // Get dark mode state from context
+  const [isPlayerLoaded, setIsPlayerLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { isDarkMode } = useAppContext();
+  const widgetContainerId = `elevenlabs-player-${postId}`;
   
-  // Extract text content from post
-  const extractTextFromContent = () => {
-    // Simple extraction for plain text
-    if (typeof postContent === 'string') {
-      return postContent;
-    }
-    
-    // For React content, we'd need a more sophisticated approach
-    // This is a simplified version
+  // Extract text content from post for the player description
+  const extractTextExcerpt = () => {
+    // Simple extraction for plain text - just get a short excerpt
     try {
-      // Convert to string safely
-      const contentString = String(postContent);
+      let textContent = '';
       
-      // Replace all HTML tags with spaces and remove excessive whitespace
-      const textOnly = contentString
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+      if (typeof postContent === 'string') {
+        textContent = postContent;
+      } else {
+        // Basic HTML tag removal for complex content
+        textContent = String(postContent).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      }
       
-      return textOnly;
+      // Create a short excerpt (first 150 characters)
+      return textContent.substring(0, 150) + (textContent.length > 150 ? '...' : '');
     } catch (error) {
-      console.error('Error extracting text from content:', error);
-      return '';
+      console.error('Error extracting text excerpt:', error);
+      return postTitle;
     }
   };
   
-  // Format time display (mm:ss)
-  const formatTime = (seconds: number) => {
-    if (isNaN(seconds) || seconds < 0) return "00:00";
-    
-    const min = Math.floor(seconds / 60);
-    const sec = Math.floor(seconds % 60);
-    return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-  };
-  
-  // Handle generating audio from the post content
-  const generateAudio = async () => {
-    if (audioGenerated) return;
-    
-    setLoading(true);
-    setLoadError(null);
-    
-    try {
-      const textContent = extractTextFromContent();
-      
-      // Call the API to generate audio
-      const response = await fetch('/api/generateAudio', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: textContent,
-          postId,
-          title: postTitle
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate audio');
-      }
-      
-      // Set the audio URL and duration
-      setAudioUrl(data.audioUrl);
-      if (data.duration) {
-        setDuration(data.duration);
-      }
-      setAudioGenerated(true);
-      setShowPlayer(true);
-    } catch (error) {
-      console.error('Error generating audio:', error);
-      setLoadError(error instanceof Error ? error.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Toggle play/pause
-  const togglePlayPause = () => {
-    if (!audioRef.current) return;
-    
-    if (isPlaying) {
-      audioRef.current.pause();
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    } else {
-      audioRef.current.play();
-      animationRef.current = requestAnimationFrame(updateProgressBar);
+  // Load the Elevenlabs AudioNative player script
+  const loadElevenLabsScript = () => {
+    if (document.getElementById('elevenlabs-script')) {
+      return;
     }
     
-    setIsPlaying(!isPlaying);
+    const script = document.createElement('script');
+    script.id = 'elevenlabs-script';
+    script.src = 'https://elevenlabs.io/player/audioNativeHelper.js';
+    script.async = true;
+    script.onload = () => {
+      console.log('ElevenLabs script loaded successfully');
+      setIsPlayerLoaded(true);
+    };
+    script.onerror = (error) => {
+      console.error('Error loading ElevenLabs script:', error);
+    };
+    
+    document.body.appendChild(script);
   };
   
-  // Update progress bar during playback
-  const updateProgressBar = () => {
-    if (!audioRef.current || !progressBarRef.current) return;
+  // Function to create the widget when the user clicks to listen
+  const initializePlayer = () => {
+    setIsLoading(true);
     
-    const currentTimeValue = audioRef.current.currentTime;
-    progressBarRef.current.value = currentTimeValue.toString();
-    setCurrentTime(currentTimeValue);
-    
-    // Continue the animation loop
-    animationRef.current = requestAnimationFrame(updateProgressBar);
-  };
-  
-  // Handle progress bar change when user drags it
-  const handleProgressChange = () => {
-    if (!audioRef.current || !progressBarRef.current) return;
-    
-    const newTime = parseFloat(progressBarRef.current.value);
-    audioRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
-    
-    if (!isPlaying) {
-      setCurrentTime(newTime);
-    }
-  };
-  
-  // Handle volume change
-  const handleVolumeChange = () => {
-    if (!audioRef.current || !volumeBarRef.current) return;
-    
-    const newVolume = parseFloat(volumeBarRef.current.value);
-    audioRef.current.volume = newVolume;
-    setVolume(newVolume);
-    
-    // If volume is set to 0, mute the audio
-    if (newVolume === 0) {
-      setIsMuted(true);
-      audioRef.current.muted = true;
-    } else if (isMuted) {
-      setIsMuted(false);
-      audioRef.current.muted = false;
-    }
-  };
-  
-  // Toggle mute
-  const toggleMute = () => {
-    if (!audioRef.current) return;
-    
-    const newMutedState = !isMuted;
-    setIsMuted(newMutedState);
-    audioRef.current.muted = newMutedState;
-  };
-  
-  // Skip forward 10 seconds
-  const skipForward = () => {
-    if (!audioRef.current) return;
-    
-    const newTime = Math.min(audioRef.current.currentTime + 10, duration);
-    audioRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
-    
-    if (progressBarRef.current) {
-      progressBarRef.current.value = newTime.toString();
-    }
-  };
-  
-  // Skip backward 10 seconds
-  const skipBackward = () => {
-    if (!audioRef.current) return;
-    
-    const newTime = Math.max(audioRef.current.currentTime - 10, 0);
-    audioRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
-    
-    if (progressBarRef.current) {
-      progressBarRef.current.value = newTime.toString();
-    }
-  };
-  
-  // Handle when audio ends
-  const handleAudioEnd = () => {
-    setIsPlaying(false);
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
+    // Make sure the script is loaded first
+    if (!document.getElementById('elevenlabs-script')) {
+      loadElevenLabsScript();
     }
     
-    if (audioRef.current && progressBarRef.current) {
-      audioRef.current.currentTime = 0;
-      progressBarRef.current.value = "0";
-      setCurrentTime(0);
+    // Create the widget container if it doesn't exist
+    const container = document.getElementById(widgetContainerId);
+    if (!container) {
+      console.error('Widget container not found');
+      setIsLoading(false);
+      return;
     }
-  };
-  
-  // Load audio metadata when the audio is loaded
-  const handleLoadedMetadata = () => {
-    if (!audioRef.current || !progressBarRef.current) return;
     
-    const audioDuration = audioRef.current.duration;
-    setDuration(audioDuration);
-    progressBarRef.current.max = audioDuration.toString();
-  };
-  
-  // Effect to set up audio element when audioUrl changes
-  useEffect(() => {
-    if (!audioUrl) return;
+    // Clear existing content
+    container.innerHTML = '';
     
-    if (!audioRef.current) {
-      audioRef.current = new Audio(audioUrl);
-      audioRef.current.volume = volume;
-      audioRef.current.muted = isMuted;
-      
-      // Add event listeners
-      audioRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
-      audioRef.current.addEventListener('ended', handleAudioEnd);
-      
-      // Clean up event listeners on unmount
-      return () => {
-        if (audioRef.current) {
-          audioRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
-          audioRef.current.removeEventListener('ended', handleAudioEnd);
-        }
-      };
-    } else {
-      audioRef.current.src = audioUrl;
-      audioRef.current.load();
+    // Create the widget element
+    const widgetElement = document.createElement('div');
+    widgetElement.id = 'elevenlabs-audionative-widget';
+    widgetElement.setAttribute('data-height', '90');
+    widgetElement.setAttribute('data-width', '100%');
+    widgetElement.setAttribute('data-frameborder', 'no');
+    widgetElement.setAttribute('data-scrolling', 'no');
+    widgetElement.setAttribute('data-publicuserid', '0590e54e519cf1a3002d7c0178c75570718d278609b0a051afe42f936dcb04cc');
+    widgetElement.setAttribute('data-playerurl', 'https://elevenlabs.io/player/index.html');
+    widgetElement.setAttribute('data-title', postTitle);
+    widgetElement.setAttribute('data-description', extractTextExcerpt());
+    
+    widgetElement.innerHTML = 'Loading the <a href="https://elevenlabs.io/text-to-speech" target="_blank" rel="noopener">Elevenlabs Text to Speech</a> AudioNative Player...';
+    
+    // Add to container
+    container.appendChild(widgetElement);
+    
+    // Trigger the script to initialize the widget
+    if (window.ElevenLabsAudioNativeHelper && typeof window.ElevenLabsAudioNativeHelper.initializeAudioNativeWidgets === 'function') {
+      window.ElevenLabsAudioNativeHelper.initializeAudioNativeWidgets();
     }
-  }, [audioUrl]);
+    
+    setIsLoading(false);
+  };
   
   // Classes based on theme (dark/light mode)
   const themeClasses = {
@@ -266,32 +113,17 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       ? 'bg-gray-800 border-gray-700 text-gray-200'
       : 'bg-white border-gray-200 text-gray-800',
     button: isDarkMode 
-      ? 'text-blue-400 hover:text-blue-300 bg-gray-700 hover:bg-gray-600'
-      : 'text-blue-600 hover:text-blue-700 bg-gray-100 hover:bg-gray-200',
-    generateButton: isDarkMode 
       ? 'bg-blue-600 hover:bg-blue-500 text-white'
       : 'bg-blue-600 hover:bg-blue-700 text-white',
-    progressBar: isDarkMode 
-      ? 'bg-gray-700'
-      : 'bg-gray-200',
-    progressFill: isDarkMode 
-      ? 'bg-blue-500'
-      : 'bg-blue-600'
-  };
-  
-  // Custom styles for progress bar
-  const progressBarStyle = {
-    background: `linear-gradient(to right, ${isDarkMode ? '#3b82f6' : '#2563eb'} 0%, ${isDarkMode ? '#3b82f6' : '#2563eb'} ${(currentTime / duration) * 100}%, ${isDarkMode ? '#374151' : '#e5e7eb'} ${(currentTime / duration) * 100}%, ${isDarkMode ? '#374151' : '#e5e7eb'} 100%)`
   };
   
   return (
     <div className={`${className} ${themeClasses.container} rounded-lg border overflow-hidden shadow-md transition-all`}>
-      {/* Show Generate Audio button if audio is not yet generated */}
-      {!audioGenerated && !loading && (
+      {/* Initial button to load the player */}
+      {!isPlayerLoaded && !isLoading && (
         <button 
-          onClick={generateAudio}
-          className={`w-full py-3 px-4 flex items-center justify-center gap-2 text-sm font-medium ${themeClasses.generateButton} transition-colors`}
-          disabled={loading}
+          onClick={initializePlayer}
+          className={`w-full py-3 px-4 flex items-center justify-center gap-2 text-sm font-medium ${themeClasses.button} transition-colors`}
         >
           <Volume2 size={18} />
           Listen to this article
@@ -299,123 +131,26 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       )}
       
       {/* Loading state */}
-      {loading && (
+      {isLoading && (
         <div className="w-full py-3 px-4 flex items-center justify-center gap-2 text-sm">
           <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-          <span>Generating audio...</span>
+          <span>Loading audio player...</span>
         </div>
       )}
       
-      {/* Error state */}
-      {loadError && (
-        <div className="w-full py-3 px-4 text-red-500 text-sm text-center">
-          <p>Failed to generate audio: {loadError}</p>
-          <button 
-            onClick={generateAudio}
-            className="mt-2 underline hover:text-red-600"
-          >
-            Try again
-          </button>
-        </div>
-      )}
-      
-      {/* Audio player */}
-      {showPlayer && audioUrl && (
-        <div className="px-4 py-3">
-          {/* Top row with title and time */}
-          <div className="flex justify-between items-center mb-3">
-            <div className="text-sm font-medium truncate">
-              {postTitle.length > 40 ? `${postTitle.substring(0, 40)}...` : postTitle}
-            </div>
-            <div className="text-xs font-mono">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </div>
-          </div>
-          
-          {/* Progress bar */}
-          <div className="group relative mb-4">
-            <input
-              ref={progressBarRef}
-              type="range"
-              min="0"
-              max={duration.toString()}
-              value={currentTime}
-              step="0.01"
-              className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-blue-500"
-              onChange={handleProgressChange}
-              onMouseDown={() => setIsDragging(true)}
-              onMouseUp={() => setIsDragging(false)}
-              onTouchStart={() => setIsDragging(true)}
-              onTouchEnd={() => setIsDragging(false)}
-              style={progressBarStyle}
-            />
-            
-            {/* Enhanced hover effect */}
-            <div className="absolute -inset-y-1.5 inset-x-0 opacity-0 group-hover:opacity-100 transition-opacity">
-              <div className="h-4 w-full"></div>
-            </div>
-          </div>
-          
-          {/* Controls */}
-          <div className="flex items-center justify-between">
-            {/* Left side controls */}
-            <div className="flex items-center space-x-3">
-              <button 
-                onClick={skipBackward}
-                className={`p-2 rounded-full ${themeClasses.button} transition-colors`}
-                aria-label="Skip backward 10 seconds"
-              >
-                <SkipBack size={16} />
-              </button>
-              
-              <button 
-                onClick={togglePlayPause}
-                className={`p-3 rounded-full ${themeClasses.button} transition-colors`}
-                aria-label={isPlaying ? "Pause" : "Play"}
-              >
-                {isPlaying ? <Pause size={18} /> : <Play size={18} />}
-              </button>
-              
-              <button 
-                onClick={skipForward}
-                className={`p-2 rounded-full ${themeClasses.button} transition-colors`}
-                aria-label="Skip forward 10 seconds"
-              >
-                <SkipForward size={16} />
-              </button>
-            </div>
-            
-            {/* Right side volume controls */}
-            <div className="flex items-center space-x-2">
-              <button 
-                onClick={toggleMute}
-                className={`p-2 rounded-full ${themeClasses.button} transition-colors`}
-                aria-label={isMuted ? "Unmute" : "Mute"}
-              >
-                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-              </button>
-              
-              <div className="w-20 hidden sm:block">
-                <input
-                  ref={volumeBarRef}
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={volume}
-                  onChange={handleVolumeChange}
-                  className="w-full h-1 rounded-full appearance-none cursor-pointer accent-blue-500"
-                  style={{
-                    background: `linear-gradient(to right, ${isDarkMode ? '#3b82f6' : '#2563eb'} 0%, ${isDarkMode ? '#3b82f6' : '#2563eb'} ${volume * 100}%, ${isDarkMode ? '#374151' : '#e5e7eb'} ${volume * 100}%, ${isDarkMode ? '#374151' : '#e5e7eb'} 100%)`
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ElevenLabs widget container */}
+      <div id={widgetContainerId} className="w-full"></div>
     </div>
   );
 };
+
+// Add this declaration to make TypeScript happy with the global ElevenLabsAudioNativeHelper
+declare global {
+  interface Window {
+    ElevenLabsAudioNativeHelper?: {
+      initializeAudioNativeWidgets: () => void;
+    };
+  }
+}
 
 export default AudioPlayer; 
