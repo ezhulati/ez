@@ -163,7 +163,7 @@ function getSlugFromUrl(url: string): string {
   return parts[parts.length - 1];
 }
 
-// Extract metadata from HTML
+// Extract metadata from HTML with improved patterns
 function extractMetadata(html: string): {
   title: string;
   description: string;
@@ -186,9 +186,22 @@ function extractMetadata(html: string): {
     twitterImage: ''
   };
   
-  // Extract title - this is page-specific by definition
-  const titleMatch = html.match(/<title>(.*?)<\/title>/i);
-  if (titleMatch) defaults.title = titleMatch[1];
+  // Extract title - this is page-specific by definition - try multiple patterns
+  const titlePatterns = [
+    /<title>(.*?)<\/title>/i,
+    /<meta\s+name="title"\s+content="([^"]*)"[^>]*>/i,
+    /<meta\s+property="og:title"\s+content="([^"]*)"[^>]*>/i,
+    /<meta\s+name="twitter:title"\s+content="([^"]*)"[^>]*>/i
+  ];
+  
+  for (const pattern of titlePatterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      defaults.title = match[1];
+      console.log("Found title with pattern:", pattern, "Value:", match[1]);
+      break;
+    }
+  }
   
   // Extract description - use multiple patterns to be more reliable
   const descPatterns = [
@@ -209,9 +222,22 @@ function extractMetadata(html: string): {
     }
   }
   
-  // Extract OG title - page specific
-  const ogTitleMatch = html.match(/<meta\s+property="og:title"\s+content="([^"]*)"[^>]*>/i);
-  if (ogTitleMatch) defaults.ogTitle = ogTitleMatch[1];
+  // Extract OG title with multiple patterns
+  const ogTitlePatterns = [
+    /<meta\s+property="og:title"\s+content="([^"]*)"[^>]*>/i,
+    /<meta\s+property='og:title'\s+content='([^']*)'[^>]*>/i,
+    /<meta\s+content="([^"]*)"\s+property="og:title"[^>]*>/i,
+    /<meta\s+content='([^']*)'\s+property="og:title"[^>]*>/i
+  ];
+  
+  for (const pattern of ogTitlePatterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      defaults.ogTitle = match[1];
+      console.log("Found OG title with pattern:", pattern, "Value:", match[1]);
+      break;
+    }
+  }
   
   // Extract OG description - page specific - try multiple patterns
   const ogDescPatterns = [
@@ -234,9 +260,22 @@ function extractMetadata(html: string): {
   const ogImageMatch = html.match(/<meta\s+property="og:image"\s+content="([^"]*)"[^>]*>/i);
   if (ogImageMatch) defaults.ogImage = ogImageMatch[1];
   
-  // Extract Twitter title - page specific
-  const twitterTitleMatch = html.match(/<meta\s+name="twitter:title"\s+content="([^"]*)"[^>]*>/i);
-  if (twitterTitleMatch) defaults.twitterTitle = twitterTitleMatch[1];
+  // Extract Twitter title with multiple patterns
+  const twitterTitlePatterns = [
+    /<meta\s+name="twitter:title"\s+content="([^"]*)"[^>]*>/i,
+    /<meta\s+name='twitter:title'\s+content='([^']*)'[^>]*>/i,
+    /<meta\s+content="([^"]*)"\s+name="twitter:title"[^>]*>/i,
+    /<meta\s+content='([^']*)'\s+name="twitter:title"[^>]*>/i
+  ];
+  
+  for (const pattern of twitterTitlePatterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      defaults.twitterTitle = match[1];
+      console.log("Found Twitter title with pattern:", pattern, "Value:", match[1]);
+      break;
+    }
+  }
   
   // Extract Twitter description - page specific
   const twitterDescMatch = html.match(/<meta\s+name="twitter:description"\s+content="([^"]*)"[^>]*>/i);
@@ -249,7 +288,7 @@ function extractMetadata(html: string): {
   return defaults;
 }
 
-// Helper function to clean HTML of existing OG and Twitter tags and add new metadata
+// Helper function to clean HTML of existing meta tags and add new metadata
 function cleanAndAddMetadata(html: string, metaTags: string): string {
   console.log("Original HTML head meta tags:", html.match(/<meta[^>]*>/gi));
   
@@ -257,10 +296,15 @@ function cleanAndAddMetadata(html: string, metaTags: string): string {
   let cleanedHtml = html.replace(/<meta\s+property="og:[^>]*>/gi, '');
   cleanedHtml = cleanedHtml.replace(/<meta\s+name="twitter:[^>]*>/gi, '');
   
-  // More aggressive approach to remove meta description tags - try multiple patterns
+  // More aggressive approach to remove meta description and title tags - try multiple patterns
   cleanedHtml = cleanedHtml.replace(/<meta\s+name=["']description["'][^>]*>/gi, '');
   cleanedHtml = cleanedHtml.replace(/<meta\s+name=description[^>]*>/gi, '');
   cleanedHtml = cleanedHtml.replace(/<meta\s+content=[^>]*\s+name=["']description["'][^>]*>/gi, '');
+  
+  // Also remove title tags (except the main title tag)
+  cleanedHtml = cleanedHtml.replace(/<meta\s+name=["']title["'][^>]*>/gi, '');
+  cleanedHtml = cleanedHtml.replace(/<meta\s+name=title[^>]*>/gi, '');
+  cleanedHtml = cleanedHtml.replace(/<meta\s+content=[^>]*\s+name=["']title["'][^>]*>/gi, '');
   
   console.log("Cleaned HTML - removed meta tags:", cleanedHtml.match(/<meta[^>]*>/gi));
   console.log("Adding new meta tags:", metaTags);
@@ -323,6 +367,22 @@ function getHardcodedBlogDescription(slug: string): string {
   return blogDescriptions[slug] || 'SEO & Marketing insights to help your business grow online. Professional tips, strategies and actionable advice from Enri Zhulati.';
 }
 
+// Function to get specific hardcoded title for a blog post by slug
+function getHardcodedBlogTitle(slug: string): string {
+  // Define a map of slug to title
+  const blogTitles: Record<string, string> = {
+    'how-to-create-ai-content-that-people-actually-want-to-read': 'How to Create AI Content That People Actually Want to Read',
+    'best-wordpress-plugins-for-business-websites': 'Best WordPress Plugins for Business Websites in 2023',
+    'is-chat-gpt-good-for-seo': 'Is ChatGPT Good for SEO? How AI Can Improve Your Search Rankings',
+    'how-often-should-you-publish-blog-posts': 'How Often Should You Publish Blog Posts? Finding Your Ideal Frequency',
+    'website-redesign-b2b-seo-checklist': 'B2B Website Redesign SEO Checklist: Protect Your Traffic & Rankings',
+    'website-development-cost-calculator': 'Website Development Cost Calculator: Budget Your Next Project'
+  };
+  
+  // Return the title if found, otherwise a generic one
+  return blogTitles[slug] || 'SEO & Digital Marketing Blog | Enri Zhulati';
+}
+
 // Add timestamp to image URLs to prevent caching
 function addTimestampToImageUrl(imageUrl: string): string {
   const timestamp = Date.now();
@@ -381,9 +441,11 @@ export default async function handler(req: Request, context: Context) {
     const slug = getSlugFromUrl(url);
     console.log("Blog slug:", slug);
     
-    // For blog posts, we'll take a more direct approach with hardcoded descriptions
-    // This ensures we always have the correct description regardless of the Contentful API
+    // For blog posts, we'll take a more direct approach with hardcoded titles and descriptions
+    // This ensures we always have the correct metadata regardless of the Contentful API
+    const blogPostTitle = getHardcodedBlogTitle(slug);
     const blogPostDescription = getHardcodedBlogDescription(slug);
+    console.log("Using hardcoded blog post title:", blogPostTitle);
     console.log("Using hardcoded blog post description:", blogPostDescription);
     
     // Standard blog post image with timestamp to prevent caching
@@ -396,12 +458,14 @@ export default async function handler(req: Request, context: Context) {
     // Hardcoded approach - directly replace the meta tags with our own
     let updatedHtml = html;
     
-    // Remove existing meta description
+    // Remove existing meta tags
     updatedHtml = updatedHtml.replace(/<meta\s+name=["']description["'][^>]*>/gi, '');
     updatedHtml = updatedHtml.replace(/<meta\s+property=["']og:description["'][^>]*>/gi, '');
     updatedHtml = updatedHtml.replace(/<meta\s+name=["']twitter:description["'][^>]*>/gi, '');
     updatedHtml = updatedHtml.replace(/<meta\s+property=["']og:image["'][^>]*>/gi, '');
     updatedHtml = updatedHtml.replace(/<meta\s+name=["']twitter:image["'][^>]*>/gi, '');
+    updatedHtml = updatedHtml.replace(/<meta\s+property=["']og:title["'][^>]*>/gi, '');
+    updatedHtml = updatedHtml.replace(/<meta\s+name=["']twitter:title["'][^>]*>/gi, '');
     
     // Get the position to insert our meta tags (right after head opening)
     const headEndPos = updatedHtml.indexOf('</head>');
@@ -411,15 +475,19 @@ export default async function handler(req: Request, context: Context) {
       <!-- SEO Meta Tags (Blog) -->
       <meta name="description" content="${blogPostDescription}">
       <!-- Open Graph / Facebook (Blog) -->
+      <meta property="og:title" content="${blogPostTitle}">
       <meta property="og:description" content="${blogPostDescription}">
       <meta property="og:image" content="${imageUrl}">
       <meta property="og:image:width" content="1200">
       <meta property="og:image:height" content="630">
       <meta property="og:url" content="https://enrizhulati.com/blog/${slug}">
+      <meta property="og:type" content="article">
       <!-- Twitter (Blog) -->
+      <meta name="twitter:title" content="${blogPostTitle}">
       <meta name="twitter:description" content="${blogPostDescription}">
       <meta name="twitter:image" content="${imageUrl}">
       <meta name="twitter:url" content="https://enrizhulati.com/blog/${slug}">
+      <meta name="twitter:card" content="summary_large_image">
       <!-- Additional cache control meta tags -->
       <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
       <meta http-equiv="Pragma" content="no-cache">
@@ -454,7 +522,7 @@ export default async function handler(req: Request, context: Context) {
     console.log("Main tools page detected");
     // For tools main page, prioritize page-specific metadata
     // Only fall back to defaults if we can't find page-specific data
-    const title = metadata.ogTitle || metadata.title;
+    const title = metadata.ogTitle || metadata.twitterTitle || metadata.title || "Free Digital Marketing Tools & Calculators | Enri Zhulati";
     
     // Check if we have the default description (homepage) and replace it with a tools-specific one
     const pageDesc = metadata.ogDescription || metadata.description;
@@ -510,9 +578,24 @@ export default async function handler(req: Request, context: Context) {
   // Process specific tool pages
   if (isSpecificToolPageUrl(url)) {
     console.log("Specific tool page detected:", url);
-    // For specific tool pages, always use the page's own metadata first
-    // Only fall back to defaults if needed
-    const title = metadata.ogTitle || metadata.title;
+    const toolSlug = getToolSlugFromUrl(url);
+    
+    // For specific tool pages, use hardcoded titles if available, then page-specific, then defaults
+    let title = metadata.ogTitle || metadata.twitterTitle || metadata.title;
+    
+    // Check if title is the generic site title and replace if needed
+    if (!title || title === "Enri Zhulati" || title === "Growth Advisor - Web Development & Digital Strategy") {
+      // Use tool-specific title based on slug
+      if (toolSlug.includes('seo-roi-calculator')) {
+        title = "SEO ROI Calculator: Calculate the Value of SEO for Your Business";
+      } else if (toolSlug.includes('speed-roi-calculator')) {
+        title = "Website Speed ROI Calculator: Calculate Revenue Impact of Page Speed";
+      } else if (toolSlug.includes('conversion-rate-calculator')) {
+        title = "Conversion Rate Calculator: See Revenue Impact of CRO";
+      } else {
+        title = "Free Digital Marketing Tools & Calculators | Enri Zhulati";
+      }
+    }
     
     // First try to get the page's own description, then fall back to our tool-specific descriptions
     const pageDesc = metadata.ogDescription || metadata.description;
@@ -574,7 +657,24 @@ export default async function handler(req: Request, context: Context) {
   
   // For any other pages (like homepage, etc.)
   console.log("Other page detected:", url);
-  const title = metadata.ogTitle || metadata.title;
+  const pathname = new URL(url).pathname;
+  let title = metadata.ogTitle || metadata.twitterTitle || metadata.title;
+  
+  // Check if title is using the default/generic site title
+  if (!title || title === "Growth Advisor - Web Development & Digital Strategy") {
+    // For homepage
+    if (pathname === "/" || pathname === "") {
+      title = "Enri Zhulati | SEO & Digital Marketing Consultant";
+    } else {
+      // Try to generate a title from the pathname
+      const pageName = pathname.split('/').pop() || '';
+      const formattedPageName = pageName
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      title = formattedPageName ? `${formattedPageName} | Enri Zhulati` : "Enri Zhulati | SEO & Digital Marketing Consultant";
+    }
+  }
   
   // Check if we have the default description and handle accordingly
   const description = metadata.ogDescription || metadata.description;
