@@ -7,11 +7,50 @@ export default async function handler(req: Request, context: Context) {
   // Get the user agent
   const userAgent = req.headers.get('User-Agent') || '';
   
+  // Get the URL and path
+  const url = new URL(req.url);
+  const path = url.pathname;
+  
+  // Special handling for sitemap.xml to ensure it's delivered quickly
+  if (path === '/sitemap.xml') {
+    console.log('Sitemap.xml request detected, serving directly');
+    try {
+      // Get the sitemap directly from the site
+      const sitemapUrl = 'https://enrizhulati.com/sitemap.xml';
+      const sitemapResponse = await fetch(sitemapUrl, {
+        headers: {
+          'User-Agent': 'Netlify Edge Function',
+          'Accept': 'application/xml',
+          'Cache-Control': 'max-age=3600'
+        }
+      });
+      
+      if (!sitemapResponse.ok) {
+        console.error(`Failed to fetch sitemap: ${sitemapResponse.status}`);
+        return context.next();
+      }
+      
+      // Return the sitemap with appropriate headers
+      const headers = new Headers();
+      headers.set('Content-Type', 'application/xml');
+      headers.set('Cache-Control', 'public, max-age=3600');
+      headers.set('X-Content-Type-Options', 'nosniff');
+      
+      return new Response(await sitemapResponse.text(), {
+        status: 200,
+        headers: headers
+      });
+    } catch (error) {
+      console.error(`Error serving sitemap: ${error}`);
+      // Fall back to the normal file serving
+      return context.next();
+    }
+  }
+  
   // Check if this is a bot request
   const isBot = botUserAgents.test(userAgent);
   
   // Check for escaped fragment parameter
-  const url = new URL(req.url);
   const hasEscapedFragment = url.searchParams.has('_escaped_fragment_');
   
   // Check if this is prerender.io itself making the request

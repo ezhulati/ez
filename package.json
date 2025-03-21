@@ -7,11 +7,13 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && npm run generate-sitemap && npm run postbuild",
     "lint": "eslint .",
     "preview": "vite preview",
     "next-dev": "next dev",
-    "server": "npm run build && node server/index.js"
+    "server": "npm run build && node server/index.js",
+    "generate-sitemap": "node scripts/generate-sitemap.js",
+    "postbuild": "node scripts/postbuild.js"
   },
   "dependencies": {
     "@contentful/rich-text-react-renderer": "^16.0.1",
