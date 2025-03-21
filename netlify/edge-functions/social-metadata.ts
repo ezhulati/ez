@@ -174,7 +174,7 @@ function extractMetadata(html: string): {
   twitterDescription: string;
   twitterImage: string;
 } {
-  // Default values
+  // Default values - only used as a last resort
   const defaults = {
     title: 'Enri Zhulati',
     description: 'SEO & Marketing Consultant helping businesses grow their online presence.',
@@ -186,36 +186,36 @@ function extractMetadata(html: string): {
     twitterImage: ''
   };
   
-  // Extract title
+  // Extract title - this is page-specific by definition
   const titleMatch = html.match(/<title>(.*?)<\/title>/i);
   if (titleMatch) defaults.title = titleMatch[1];
   
-  // Extract description
-  const descMatch = html.match(/<meta\s+name="description"\s+content="(.*?)"/i);
+  // Extract description - this should be page-specific
+  const descMatch = html.match(/<meta\s+name="description"\s+content="([^"]*)"[^>]*>/i);
   if (descMatch) defaults.description = descMatch[1];
   
-  // Extract OG title
-  const ogTitleMatch = html.match(/<meta\s+property="og:title"\s+content="(.*?)"/i);
+  // Extract OG title - page specific
+  const ogTitleMatch = html.match(/<meta\s+property="og:title"\s+content="([^"]*)"[^>]*>/i);
   if (ogTitleMatch) defaults.ogTitle = ogTitleMatch[1];
   
-  // Extract OG description
-  const ogDescMatch = html.match(/<meta\s+property="og:description"\s+content="(.*?)"/i);
+  // Extract OG description - page specific
+  const ogDescMatch = html.match(/<meta\s+property="og:description"\s+content="([^"]*)"[^>]*>/i);
   if (ogDescMatch) defaults.ogDescription = ogDescMatch[1];
   
-  // Extract OG image
-  const ogImageMatch = html.match(/<meta\s+property="og:image"\s+content="(.*?)"/i);
+  // Extract OG image - page specific
+  const ogImageMatch = html.match(/<meta\s+property="og:image"\s+content="([^"]*)"[^>]*>/i);
   if (ogImageMatch) defaults.ogImage = ogImageMatch[1];
   
-  // Extract Twitter title
-  const twitterTitleMatch = html.match(/<meta\s+name="twitter:title"\s+content="(.*?)"/i);
+  // Extract Twitter title - page specific
+  const twitterTitleMatch = html.match(/<meta\s+name="twitter:title"\s+content="([^"]*)"[^>]*>/i);
   if (twitterTitleMatch) defaults.twitterTitle = twitterTitleMatch[1];
   
-  // Extract Twitter description
-  const twitterDescMatch = html.match(/<meta\s+name="twitter:description"\s+content="(.*?)"/i);
+  // Extract Twitter description - page specific
+  const twitterDescMatch = html.match(/<meta\s+name="twitter:description"\s+content="([^"]*)"[^>]*>/i);
   if (twitterDescMatch) defaults.twitterDescription = twitterDescMatch[1];
   
-  // Extract Twitter image
-  const twitterImageMatch = html.match(/<meta\s+name="twitter:image"\s+content="(.*?)"/i);
+  // Extract Twitter image - page specific
+  const twitterImageMatch = html.match(/<meta\s+name="twitter:image"\s+content="([^"]*)"[^>]*>/i);
   if (twitterImageMatch) defaults.twitterImage = twitterImageMatch[1];
   
   return defaults;
@@ -347,9 +347,11 @@ export default async function handler(req: Request, context: Context) {
     
     // Process main tools page
     if (isMainToolsPageUrl(url)) {
+      // For tools main page, prioritize page-specific metadata
+      // Only fall back to defaults if we can't find page-specific data
+      const title = metadata.ogTitle || metadata.title;
+      const description = metadata.ogDescription || metadata.description;
       const ogImage = metadata.ogImage || "https://enrizhulati.com/images/tools-collection-preview.jpg";
-      const title = metadata.ogTitle || metadata.title || 'Marketing & SEO Tools';
-      const description = metadata.ogDescription || metadata.description || 'Boost your online performance with marketing calculators and SEO tools.';
       
       // Set better cache headers to ensure crawlers get fresh content
       const responseHeaders = new Headers(response.headers);
@@ -388,10 +390,13 @@ export default async function handler(req: Request, context: Context) {
     
     // Process specific tool pages
     if (isSpecificToolPageUrl(url)) {
-      // Get the appropriate image for this specific tool
+      // For specific tool pages, always use the page's own metadata first
+      // Only fall back to defaults if needed
+      const title = metadata.ogTitle || metadata.title;
+      const description = metadata.ogDescription || metadata.description;
+      
+      // Use the page's own image if available, or fall back to tool-specific image
       const ogImage = metadata.ogImage || getToolImage(url);
-      const title = metadata.ogTitle || metadata.title || 'Marketing Tool';
-      const description = metadata.ogDescription || metadata.description || 'Free online marketing calculator to optimize your business performance.';
       
       // Set better cache headers to ensure crawlers get fresh content
       const responseHeaders = new Headers(response.headers);
@@ -429,9 +434,11 @@ export default async function handler(req: Request, context: Context) {
     }
     
     // For any other pages (like homepage, etc.)
+    const title = metadata.ogTitle || metadata.title;
+    const description = metadata.ogDescription || metadata.description;
+    
+    // Default to the page's own image or fallback to homepage image
     const ogImage = metadata.ogImage || metadata.twitterImage || "https://enrizhulati.com/images/homepage-preview.jpg";
-    const title = metadata.ogTitle || metadata.title || 'Enri Zhulati | SEO & Marketing Consultant';
-    const description = metadata.ogDescription || metadata.description || 'SEO and Marketing Consultant helping businesses grow their online presence through strategic SEO, content marketing and web optimization.';
     
     // Set better cache headers to ensure crawlers get fresh content
     const responseHeaders = new Headers(response.headers);
