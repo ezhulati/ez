@@ -462,6 +462,7 @@ export default async function handler(req: Request, context: Context) {
       const metaTags = `
       <!-- SEO Meta Tags -->
       <meta name="description" content="${blogPostDescription}">
+      <meta name="keywords" content="ai content, content creation, content strategy, AI writing, marketing content, SEO content">
       <link rel="canonical" href="${canonicalUrl}">
       
       <!-- Open Graph / Facebook -->
@@ -471,6 +472,8 @@ export default async function handler(req: Request, context: Context) {
       <meta property="og:title" content="${blogPostTitle}">
       <meta property="og:description" content="${blogPostDescription}">
       <meta property="og:image" content="${imageUrl}">
+      <meta property="article:published_time" content="2023-07-15T08:00:00+00:00">
+      <meta property="article:author" content="https://enrizhulati.com">
       
       <!-- Twitter -->
       <meta name="twitter:card" content="summary_large_image">
@@ -481,6 +484,36 @@ export default async function handler(req: Request, context: Context) {
       
       <!-- Prerender instructions -->
       <meta name="prerender-status-code" content="200">
+      
+      <!-- Structured data for BlogPosting -->
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": "${canonicalUrl}"
+        },
+        "headline": "${blogPostTitle}",
+        "description": "${blogPostDescription}",
+        "image": "${imageUrl}",
+        "author": {
+          "@type": "Person",
+          "name": "Enri Zhulati",
+          "url": "https://enrizhulati.com"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Enri Zhulati",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://enrizhulati.com/images/logo.png"
+          }
+        },
+        "datePublished": "2023-07-15T08:00:00+00:00",
+        "dateModified": "2023-08-30T10:00:00+00:00"
+      }
+      </script>
       `;
       
       // Insert the meta tags
@@ -554,6 +587,7 @@ export default async function handler(req: Request, context: Context) {
   const metaTags = `
     <!-- Essential meta tags -->
     <meta name="description" content="${description}">
+    <meta name="keywords" content="SEO services, digital marketing, website optimization, conversion rate optimization, content strategy">
     <link rel="canonical" href="${canonicalUrl}">
     
     <!-- Open Graph / Facebook -->
@@ -575,6 +609,39 @@ export default async function handler(req: Request, context: Context) {
     
     <!-- Prerender instructions -->
     <meta name="prerender-status-code" content="200">
+    
+    <!-- Structured data for WebPage -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "${isSpecificToolPageUrl(url) ? 'SoftwareApplication' : 'WebPage'}",
+      "name": "${title}",
+      "description": "${description}",
+      "url": "${canonicalUrl}",
+      "image": "${imageUrl}",
+      ${isSpecificToolPageUrl(url) ? `
+      "applicationCategory": "BusinessApplication",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      ` : ''}
+      "author": {
+        "@type": "Person",
+        "name": "Enri Zhulati",
+        "url": "https://enrizhulati.com"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Enri Zhulati",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://enrizhulati.com/images/logo.png"
+        }
+      }
+    }
+    </script>
   `;
   
   // Clean the HTML and add the new meta tags
