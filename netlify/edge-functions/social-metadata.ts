@@ -436,86 +436,88 @@ export default async function handler(req: Request, context: Context) {
     return context.next();
   }
 
-  // For regular users, continue with our existing meta tag enhancement
-  if (isBlogPostUrl(url)) {
-    console.log("Blog post URL detected for regular user:", url);
-    const slug = getSlugFromUrl(url);
-    
-    // Try to fetch blog post data from Contentful
-    let blogPost = null;
-    try {
-      blogPost = await getBlogPost(slug);
-      console.log("Blog post data fetched from Contentful:", blogPost ? blogPost.fields.title : "Not found");
-      
-      // Add detailed logging for debugging
-      if (blogPost) {
-        console.log("Blog post meta fields debug:");
-        console.log("- metaTitle:", blogPost.fields.metaTitle);
-        console.log("- title:", blogPost.fields.title);
-        console.log("- metaDescription:", blogPost.fields.metaDescription);
-        console.log("- excerpt:", blogPost.fields.excerpt);
-        console.log("- seoKeywords:", blogPost.fields.seoKeywords);
-        console.log("- categories:", blogPost.fields.categories);
-        console.log("- slug:", blogPost.fields.slug);
-        console.log("- customUrl:", blogPost.fields.customUrl);
-      }
-    } catch (error) {
-      console.error("Error fetching blog post from Contentful:", error);
-    }
-    
-    // Use data from Contentful or fall back to hardcoded values
-    const blogPostTitle = blogPost?.fields.metaTitle || blogPost?.fields.title || getHardcodedBlogTitle(slug);
-    const blogPostDescription = blogPost?.fields.metaDescription || blogPost?.fields.excerpt || getHardcodedBlogDescription(slug);
-    
-    // Get keywords from Contentful or fall back to default keywords
-    const blogPostKeywords = blogPost?.fields.seoKeywords?.join(', ') 
-      || blogPost?.fields.categories?.join(', ') 
-      || "ai content, content creation, content strategy, AI writing, marketing content, SEO content";
-    
-    // Escape HTML characters for meta tag content
-    const escapeHtml = (str: string) => {
-      if (!str) return '';
-      return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    };
-    
-    const safeTitle = escapeHtml(blogPostTitle);
-    const safeDescription = escapeHtml(blogPostDescription);
-    const safeKeywords = escapeHtml(blogPostKeywords);
-    
-    // Use dynamic image URLs for regular browsers
-    const imageUrl = blogPost?.fields.featuredImage?.fields?.file?.url 
-      ? `https:${blogPost.fields.featuredImage.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
-      : addTimestampToImageUrl("https://enrizhulati.com/images/blog-social-image.jpg");
-    
-    // Get the original response
-    const response = await context.next();
+  // Get the original response
+  const response = await context.next();
+  
+  try {
+    // Read the HTML content
     const html = await response.text();
     
-    // For regular browsers, update the existing HTML
     let updatedHtml = html;
+    const responseHeaders = new Headers(response.headers);
     
-    // More targeted approach to remove meta tags
-    // First, remove all existing keywords meta tags
-    updatedHtml = updatedHtml.replace(/<meta\s+name=["']keywords["'][^>]*>/gi, '');
+    // Create a unique marker that won't be in the original HTML
+    const marker = `<!--EZ-META-${Date.now()}-${Math.random().toString(36).substring(2, 15)}-->`;
     
-    // Then remove other meta tags we'll be replacing
-    updatedHtml = updatedHtml.replace(/<meta\s+name=["']description["'][^>]*>/gi, '');
-    updatedHtml = updatedHtml.replace(/<meta\s+property=["']og:[^"']*["'][^>]*>/gi, '');
-    updatedHtml = updatedHtml.replace(/<meta\s+name=["']twitter:[^"']*["'][^>]*>/gi, '');
+    // Find head tag and prepare it for insertion
+    const headMatch = html.match(/<head\b[^>]*>([\s\S]*?)<\/head>/i);
     
-    // Remove canonical links
-    updatedHtml = updatedHtml.replace(/<link\s+rel=["']canonical["'][^>]*>/gi, '');
+    if (!headMatch) {
+      console.log("No head tag found in HTML");
+      return new Response(html, {
+        headers: responseHeaders,
+      });
+    }
     
-    // Get the position to insert our meta tags
-    const headEndPos = updatedHtml.indexOf('</head>');
-    if (headEndPos !== -1) {
-      const metaTags = `
-      <!-- SEO Meta Tags -->
+    const fullHeadTag = headMatch[0]; // The entire <head>...</head> section
+    const headContent = headMatch[1]; // Just the content between <head> and </head>
+    
+    // Prepare to generate our new meta tags
+    let metaTags = '';
+    
+    // Handle blog posts specifically
+    if (isBlogPostUrl(url)) {
+      console.log("Blog post URL detected, fetching data");
+      const slug = getSlugFromUrl(url);
+      
+      // Fetch blog post data
+      let blogPost = null;
+      try {
+        blogPost = await getBlogPost(slug);
+        console.log("Blog post data fetched:", blogPost ? blogPost.fields.title : "Not found");
+        
+        // Debug logging
+        if (blogPost) {
+          console.log("Blog post meta fields debug:");
+          console.log("- metaTitle:", blogPost.fields.metaTitle);
+          console.log("- title:", blogPost.fields.title);
+          console.log("- metaDescription:", blogPost.fields.metaDescription);
+          console.log("- excerpt:", blogPost.fields.excerpt);
+          console.log("- seoKeywords:", blogPost.fields.seoKeywords);
+          console.log("- categories:", blogPost.fields.categories);
+        }
+      } catch (error) {
+        console.error("Error fetching blog post:", error);
+      }
+      
+      // Get the data
+      const blogPostTitle = blogPost?.fields.metaTitle || blogPost?.fields.title || getHardcodedBlogTitle(slug);
+      const blogPostDescription = blogPost?.fields.metaDescription || blogPost?.fields.excerpt || getHardcodedBlogDescription(slug);
+      const blogPostKeywords = blogPost?.fields.seoKeywords?.join(', ') || blogPost?.fields.categories?.join(', ') || "ai content, content creation, content strategy, AI writing, marketing content, SEO content";
+      
+      // Escape the content
+      const escapeHtml = (str: string) => {
+        if (!str) return '';
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      };
+      
+      const safeTitle = escapeHtml(blogPostTitle);
+      const safeDescription = escapeHtml(blogPostDescription);
+      const safeKeywords = escapeHtml(blogPostKeywords);
+      
+      // Image URL
+      const imageUrl = blogPost?.fields.featuredImage?.fields?.file?.url 
+        ? `https:${blogPost.fields.featuredImage.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
+        : addTimestampToImageUrl("https://enrizhulati.com/images/blog-social-image.jpg");
+        
+      // Create our meta tags string
+      metaTags = `
+      <!-- START: Injected SEO Meta Tags -->
       <meta name="description" content="${safeDescription}">
       <meta name="keywords" content="${safeKeywords}">
       <link rel="canonical" href="${canonicalUrl}">
@@ -536,9 +538,6 @@ export default async function handler(req: Request, context: Context) {
       <meta name="twitter:title" content="${safeTitle}">
       <meta name="twitter:description" content="${safeDescription}">
       <meta name="twitter:image" content="${imageUrl}">
-      
-      <!-- Prerender instructions -->
-      <meta name="prerender-status-code" content="200">
       
       <!-- Structured data for BlogPosting -->
       <script type="application/ld+json">
@@ -570,165 +569,197 @@ export default async function handler(req: Request, context: Context) {
         "dateModified": "${blogPost?.fields.articleModifiedDate || blogPost?.sys.updatedAt || '2023-08-30T10:00:00+00:00'}"
       }
       </script>
+      <!-- END: Injected SEO Meta Tags -->
       `;
+    } else {
+      // Handle other pages (not blog posts)
+      // Extract existing metadata from the HTML
+      const metadata = extractMetadata(html);
       
-      // Insert the meta tags
-      updatedHtml = updatedHtml.slice(0, headEndPos) + metaTags + updatedHtml.slice(headEndPos);
+      // Determine title and description based on the page type
+      let title = metadata.ogTitle || metadata.twitterTitle || metadata.title || "Enri Zhulati | SEO & Digital Marketing Consultant";
+      let description = metadata.ogDescription || metadata.description || "Professional web development, content creation, and SEO services that help your business get found online.";
+      
+      // Extract keywords from the HTML
+      let keywords = "";
+      const keywordsMatch = html.match(/<meta\s+name="keywords"\s+content="([^"]*)"[^>]*>/i);
+      if (keywordsMatch && keywordsMatch[1]) {
+        keywords = keywordsMatch[1];
+      }
+      
+      // If no keywords found, use default keywords based on page type
+      if (!keywords) {
+        if (isSpecificToolPageUrl(url)) {
+          keywords = "SEO tools, marketing calculators, ROI calculator, conversion rate calculator, SEO ROI, web performance";
+        } else if (isMainToolsPageUrl(url)) {
+          keywords = "marketing tools, SEO tools, free calculators, web tools, SEO resources";
+        } else {
+          keywords = "SEO, web development, content marketing, digital strategy, marketing consultant";
+        }
+      }
+      
+      // Handle tool pages
+      if (isSpecificToolPageUrl(url)) {
+        const toolSlug = getToolSlugFromUrl(url);
+        
+        // Use tool-specific title if needed
+        if (!title || title === "Enri Zhulati" || title === "Growth Advisor - Web Development & Digital Strategy") {
+          if (toolSlug === "seo-roi-calculator") {
+            title = "SEO ROI Calculator | Measure SEO Investment Returns";
+            description = "Calculate the potential return on investment for your SEO campaigns with this free SEO ROI calculator.";
+            keywords = "SEO ROI, SEO calculator, return on investment, SEO investment, SEO value calculator";
+          } else if (toolSlug === "speed-roi-calculator") {
+            title = "Web Speed ROI Calculator | Performance Impact Calculator";
+            description = "Calculate how web performance and page speed impacts your business metrics with this speed ROI calculator.";
+            keywords = "speed ROI, web performance, page speed impact, performance ROI, website speed calculator";
+          } else if (toolSlug === "conversion-rate-calculator") {
+            title = "Conversion Rate Calculator | Optimize Your Funnel";
+            description = "Calculate and optimize your conversion rates with this free calculator. See how changes affect your bottom line.";
+            keywords = "conversion rate calculator, funnel optimization, CR calculator, sales conversion, lead conversion";
+          }
+        }
+        
+        // Use tool-specific description if needed
+        const toolDesc = getToolDescription(url);
+        if (!description || description === "Professional web development, content creation, and SEO services that help your business get found online.") {
+          description = toolDesc;
+        }
+      } 
+      // Main tools page
+      else if (isMainToolsPageUrl(url)) {
+        title = "Free Digital Marketing Tools & Calculators | Enri Zhulati";
+        description = "Free marketing ROI calculators and tools to help you grow your business online. Measure the impact of SEO, website speed, and conversion optimization.";
+      }
+      
+      // Determine image URL based on page type
+      let imageUrl;
+      if (isSpecificToolPageUrl(url)) {
+        imageUrl = addTimestampToImageUrl(getToolImage(url));
+      } else if (isMainToolsPageUrl(url)) {
+        imageUrl = addTimestampToImageUrl("https://enrizhulati.com/images/tools-collection-preview.jpg");
+      } else {
+        imageUrl = addTimestampToImageUrl(metadata.ogImage || "https://enrizhulati.com/images/homepage-preview.jpg");
+      }
+      
+      // Escape HTML characters for meta tag content
+      const escapeHtml = (str: string) => {
+        if (!str) return '';
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      };
+
+      const safeTitle = escapeHtml(title);
+      const safeDescription = escapeHtml(description);
+      const safeKeywords = escapeHtml(keywords);
+      
+      // Create meta tags for other page types
+      metaTags = `
+      <!-- START: Injected SEO Meta Tags -->
+      <meta name="description" content="${safeDescription}">
+      <meta name="keywords" content="${safeKeywords}">
+      <link rel="canonical" href="${canonicalUrl}">
+      
+      <!-- Open Graph / Facebook -->
+      <meta property="og:type" content="${isSpecificToolPageUrl(url) ? 'website' : 'website'}">
+      <meta property="og:url" content="${canonicalUrl}">
+      <meta property="og:site_name" content="Enri Zhulati">
+      <meta property="og:title" content="${safeTitle}">
+      <meta property="og:description" content="${safeDescription}">
+      <meta property="og:image" content="${imageUrl}">
+      
+      <!-- Twitter -->
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:site" content="@enrizhulati">
+      <meta name="twitter:creator" content="@enrizhulati">
+      <meta name="twitter:url" content="${canonicalUrl}">
+      <meta name="twitter:title" content="${safeTitle}">
+      <meta name="twitter:description" content="${safeDescription}">
+      <meta name="twitter:image" content="${imageUrl}">
+      
+      <!-- Structured data for WebPage -->
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "${isSpecificToolPageUrl(url) ? 'SoftwareApplication' : 'WebPage'}",
+        "name": "${safeTitle}",
+        "description": "${safeDescription}",
+        "url": "${canonicalUrl}",
+        "image": "${imageUrl}",
+        ${isSpecificToolPageUrl(url) ? `
+        "applicationCategory": "BusinessApplication",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        ` : ''}
+        "author": {
+          "@type": "Person",
+          "name": "Enri Zhulati",
+          "url": "https://enrizhulati.com"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Enri Zhulati",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://enrizhulati.com/images/logo.png"
+          }
+        }
+      }
+      </script>
+      <!-- END: Injected SEO Meta Tags -->
+      `;
     }
     
-    // Set cache headers for regular browsers
-    const responseHeaders = new Headers(response.headers);
+    // Now carefully remove the old meta tags we want to replace
+    // This is a simplified approach - we don't try to parse HTML structure
+    // Just remove whole tag instances based on unique strings
+    
+    // Define patterns to find the meta tags we want to remove
+    const patternsToRemove = [
+      /<meta\s+name=["']keywords["'][^>]*>/gi,
+      /<meta\s+name=["']description["'][^>]*>/gi,
+      /<meta\s+property=["']og:title["'][^>]*>/gi,
+      /<meta\s+property=["']og:description["'][^>]*>/gi,
+      /<meta\s+property=["']og:image["'][^>]*>/gi,
+      /<meta\s+property=["']og:url["'][^>]*>/gi,
+      /<meta\s+property=["']og:type["'][^>]*>/gi,
+      /<meta\s+property=["']og:site_name["'][^>]*>/gi,
+      /<meta\s+name=["']twitter:card["'][^>]*>/gi,
+      /<meta\s+name=["']twitter:site["'][^>]*>/gi,
+      /<meta\s+name=["']twitter:title["'][^>]*>/gi,
+      /<meta\s+name=["']twitter:description["'][^>]*>/gi,
+      /<meta\s+name=["']twitter:image["'][^>]*>/gi,
+      /<link\s+rel=["']canonical["'][^>]*>/gi
+    ];
+    
+    // Clean up the head content by removing the old meta tags
+    let cleanedHeadContent = headContent;
+    for (const pattern of patternsToRemove) {
+      cleanedHeadContent = cleanedHeadContent.replace(pattern, '');
+    }
+    
+    // Construct a new head tag with our meta tags inserted at the beginning
+    // This ensures they're not buried within other tags in the head
+    const newHeadTag = `<head>${metaTags}${cleanedHeadContent}</head>`;
+    
+    // Replace the old head tag with our new one
+    updatedHtml = html.replace(fullHeadTag, newHeadTag);
+    
+    // Set cache control headers
     setNoCacheHeaders(responseHeaders);
     
     // Return the updated HTML
     return new Response(updatedHtml, {
       headers: responseHeaders,
     });
-  } 
-  
-  // For all other page types (tools, homepage, etc.)
-  // Get the original response for regular users
-  const response = await context.next();
-  const html = await response.text();
-  
-  // Extract existing metadata
-  const metadata = extractMetadata(html);
-  
-  // Determine title and description based on the page type
-  let title = metadata.ogTitle || metadata.twitterTitle || metadata.title || "Enri Zhulati | SEO & Digital Marketing Consultant";
-  let description = metadata.ogDescription || metadata.description || "Professional web development, content creation, and SEO services that help your business get found online.";
-  
-  // Extract keywords from the HTML - first try to find the meta keywords tag
-  let keywords = "";
-  const keywordsMatch = html.match(/<meta\s+name="keywords"\s+content="([^"]*)"[^>]*>/i);
-  if (keywordsMatch && keywordsMatch[1]) {
-    keywords = keywordsMatch[1];
+  } catch (error) {
+    console.error("Error processing response:", error);
+    return response;
   }
-  
-  // If no keywords found, use default keywords based on page type
-  if (!keywords) {
-    if (isSpecificToolPageUrl(url)) {
-      keywords = "SEO tools, marketing calculators, ROI calculator, conversion rate calculator, SEO ROI, web performance";
-    } else if (isMainToolsPageUrl(url)) {
-      keywords = "marketing tools, SEO tools, free calculators, web tools, SEO resources";
-    } else {
-      keywords = "SEO, web development, content marketing, digital strategy, marketing consultant";
-    }
-  }
-  
-  // Handle tool pages for regular users
-  if (isSpecificToolPageUrl(url)) {
-    const toolSlug = getToolSlugFromUrl(url);
-    
-    // Use tool-specific title if needed
-    if (!title || title === "Enri Zhulati" || title === "Growth Advisor - Web Development & Digital Strategy") {
-      if (toolSlug === "seo-roi-calculator") {
-        title = "SEO ROI Calculator | Measure SEO Investment Returns";
-        description = "Calculate the potential return on investment for your SEO campaigns with this free SEO ROI calculator.";
-        keywords = "SEO ROI, SEO calculator, return on investment, SEO investment, SEO value calculator";
-      } else if (toolSlug === "speed-roi-calculator") {
-        title = "Web Speed ROI Calculator | Performance Impact Calculator";
-        description = "Calculate how web performance and page speed impacts your business metrics with this speed ROI calculator.";
-        keywords = "speed ROI, web performance, page speed impact, performance ROI, website speed calculator";
-      } else if (toolSlug === "conversion-rate-calculator") {
-        title = "Conversion Rate Calculator | Optimize Your Funnel";
-        description = "Calculate and optimize your conversion rates with this free calculator. See how changes affect your bottom line.";
-        keywords = "conversion rate calculator, funnel optimization, CR calculator, sales conversion, lead conversion";
-      }
-    }
-    
-    // Use tool-specific description if needed
-    const toolDesc = getToolDescription(url);
-    if (!description || description === "Professional web development, content creation, and SEO services that help your business get found online.") {
-      description = toolDesc;
-    }
-  } 
-  // Main tools page
-  else if (isMainToolsPageUrl(url)) {
-    title = "Free Digital Marketing Tools & Calculators | Enri Zhulati";
-    description = "Free marketing ROI calculators and tools to help you grow your business online. Measure the impact of SEO, website speed, and conversion optimization.";
-  }
-  
-  // Determine image URL based on page type
-  let imageUrl;
-  if (isSpecificToolPageUrl(url)) {
-    imageUrl = addTimestampToImageUrl(getToolImage(url));
-  } else if (isMainToolsPageUrl(url)) {
-    imageUrl = addTimestampToImageUrl("https://enrizhulati.com/images/tools-collection-preview.jpg");
-  } else {
-    imageUrl = addTimestampToImageUrl(metadata.ogImage || "https://enrizhulati.com/images/homepage-preview.jpg");
-  }
-  
-  // For regular browsers, update the existing HTML with meta tags
-  const responseHeaders = new Headers(response.headers);
-  setNoCacheHeaders(responseHeaders);
-  
-  // Prepare meta tags
-  const metaTags = `
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="${description}">
-    <meta name="keywords" content="${keywords}">
-    <link rel="canonical" href="${canonicalUrl}">
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="${isSpecificToolPageUrl(url) ? 'website' : 'website'}">
-    <meta property="og:url" content="${canonicalUrl}">
-    <meta property="og:site_name" content="Enri Zhulati">
-    <meta property="og:title" content="${title}">
-    <meta property="og:description" content="${description}">
-    <meta property="og:image" content="${imageUrl}">
-    
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:site" content="@enrizhulati">
-    <meta name="twitter:creator" content="@enrizhulati">
-    <meta name="twitter:url" content="${canonicalUrl}">
-    <meta name="twitter:title" content="${title}">
-    <meta name="twitter:description" content="${description}">
-    <meta name="twitter:image" content="${imageUrl}">
-    
-    <!-- Prerender instructions -->
-    <meta name="prerender-status-code" content="200">
-    
-    <!-- Structured data for WebPage -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "${isSpecificToolPageUrl(url) ? 'SoftwareApplication' : 'WebPage'}",
-      "name": "${title}",
-      "description": "${description}",
-      "url": "${canonicalUrl}",
-      "image": "${imageUrl}",
-      ${isSpecificToolPageUrl(url) ? `
-      "applicationCategory": "BusinessApplication",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
-      ` : ''}
-      "author": {
-        "@type": "Person",
-        "name": "Enri Zhulati",
-        "url": "https://enrizhulati.com"
-      },
-      "publisher": {
-        "@type": "Organization",
-        "name": "Enri Zhulati",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://enrizhulati.com/images/logo.png"
-        }
-      }
-    }
-    </script>
-  `;
-  
-  // Clean the HTML and add the new meta tags
-  const updatedHtml = cleanAndAddMetadata(html, metaTags);
-  
-  // Return the modified HTML
-  return new Response(updatedHtml, {
-    headers: responseHeaders,
-  });
 } 
