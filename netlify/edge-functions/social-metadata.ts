@@ -257,8 +257,10 @@ function cleanAndAddMetadata(html: string, metaTags: string): string {
   let cleanedHtml = html.replace(/<meta\s+property="og:[^>]*>/gi, '');
   cleanedHtml = cleanedHtml.replace(/<meta\s+name="twitter:[^>]*>/gi, '');
   
-  // More aggressive approach to remove meta description tags
+  // More aggressive approach to remove meta description tags - try multiple patterns
   cleanedHtml = cleanedHtml.replace(/<meta\s+name=["']description["'][^>]*>/gi, '');
+  cleanedHtml = cleanedHtml.replace(/<meta\s+name=description[^>]*>/gi, '');
+  cleanedHtml = cleanedHtml.replace(/<meta\s+content=[^>]*\s+name=["']description["'][^>]*>/gi, '');
   
   console.log("Cleaned HTML - removed meta tags:", cleanedHtml.match(/<meta[^>]*>/gi));
   console.log("Adding new meta tags:", metaTags);
@@ -341,6 +343,7 @@ export default async function handler(req: Request, context: Context) {
     }
     
     console.log("Blog post found:", post.fields.title);
+    console.log("Blog post meta description:", post.fields.metaDescription || post.fields.excerpt || '');
     
     // Get the original response
     const response = await context.next();
@@ -359,10 +362,9 @@ export default async function handler(req: Request, context: Context) {
       description: post.fields.metaDescription || post.fields.excerpt || ''
     });
     
-    // Create metadata tags
+    // Create metadata tags - make sure to format them consistently with the tool pages
     const metaTags = `
       <!-- SEO Meta Tags -->
-      <title>${post.fields.metaTitle || post.fields.title}</title>
       <meta name="description" content="${post.fields.metaDescription || post.fields.excerpt || ''}">
       ${post.fields.seoKeywords ? `<meta name="keywords" content="${post.fields.seoKeywords.join(', ')}">` : ''}
       
