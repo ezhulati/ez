@@ -425,63 +425,13 @@ export default async function handler(req: Request, context: Context) {
   const userAgent = req.headers.get('User-Agent') || '';
   console.log("User-Agent:", userAgent);
   
-  // Comprehensive bot detection for prerender
-  const isBot = /bot|googlebot|bingbot|yandex|baiduspider|twitterbot|facebookexternalhit|LinkedInBot|snapchat|pinterest|vkShare|W3C_Validator|whatsapp|telegrambot|slackbot|discordbot|Applebot|Embedly|ia_archiver|prerender|HeadlessChrome|Lighthouse|Bytespider|MSIE|bingpreview|Twitterbot|googlebot-image|discord|curl|wget/i.test(userAgent);
+  // Check if this request was already prerendered
+  const wasPrerendered = req.headers.get('X-Prerendered') === 'true';
   
-  // Check for escaped fragment (used by some older crawlers)
-  const hasEscapedFragment = requestUrl.searchParams.has('_escaped_fragment_');
-  
-  // Check if the request should be handled by prerender
-  if (isBot || hasEscapedFragment) {
-    console.log("Bot detected, using prerender.io");
-    
-    // Get headers to pass to prerender
-    const headers = new Headers();
-    headers.set('X-Prerender-Token', 'DXHxiXW4lVGsLvOASJvj');
-    headers.set('User-Agent', userAgent);
-    
-    // Handle various prerender request headers
-    // Fix for Headers.entries() not being available in some environments
-    const forwardedHeaders = ['x-forwarded-for', 'x-forwarded-proto', 'x-forwarded-host', 'accept-encoding', 'host'];
-    forwardedHeaders.forEach(key => {
-      const value = req.headers.get(key);
-      if (value) {
-        headers.set(key, value);
-      }
-    });
-    
-    // Ensure scheme is properly set
-    const prerenderUrl = new URL(canonicalUrl);
-    if (!prerenderUrl.protocol || prerenderUrl.protocol === ':') {
-      prerenderUrl.protocol = 'https:';
-    }
-
-    // Create URL for prerender service
-    const serviceUrl = `https://service.prerender.io/${prerenderUrl.toString()}`;
-    console.log("Prerendering using URL:", serviceUrl);
-    
-    try {
-      // Fetch from prerender.io service
-      const prerenderResponse = await fetch(serviceUrl, {
-        headers: headers,
-        redirect: 'follow',
-      });
-      
-      // Create response headers
-      const responseHeaders = new Headers(prerenderResponse.headers);
-      responseHeaders.set('X-Prerender', 'true');
-      
-      // Return the prerendered content
-      return new Response(await prerenderResponse.text(), {
-        status: prerenderResponse.status,
-        headers: responseHeaders
-      });
-    } catch (error) {
-      console.error("Error using prerender service:", error);
-      
-      // Fall back to normal rendering if prerender fails
-      return context.next();
-    }
+  // If this was prerendered, just pass through the response
+  if (wasPrerendered) {
+    console.log("Request was already prerendered, passing through");
+    return context.next();
   }
 
   // For regular users, continue with our existing meta tag enhancement

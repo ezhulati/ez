@@ -4,7 +4,7 @@
   command = "npm run build"
   publish = "dist"
 
-# Redirect rules
+# Regular redirect rules
 [[redirects]]
   from = "/blog/*"
   to = "/index.html"
@@ -19,6 +19,7 @@
   VITE_CONTENTFUL_PREVIEW_TOKEN = "81cfBHWQVwo4pe7ZPisFfvJrzpwCy-AHyBEuf_DA5tQ"
   VITE_CONTENTFUL_ENVIRONMENT = "master"
   CONTENTFUL_REBUILD_HOOK = "https://api.netlify.com/build_hooks/67d782602c666be1d13a74e5"
+  PRERENDER_TOKEN = "DXHxiXW4lVGsLvOASJvj"
 
 # Build optimization
 [build.processing]
@@ -33,6 +34,11 @@
   pretty_urls = true
 [build.processing.images]
   compress = true
+
+# Prerender middleware that runs before other edge functions
+[[edge_functions]]
+  path = "/*"
+  function = "prerender-middleware"
 
 # Edge function for blog metadata - special handling for social media crawlers
 [[edge_functions]]
