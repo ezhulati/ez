@@ -323,6 +323,36 @@ function getHardcodedBlogDescription(slug: string): string {
   return blogDescriptions[slug] || 'SEO & Marketing insights to help your business grow online. Professional tips, strategies and actionable advice from Enri Zhulati.';
 }
 
+// Add timestamp to image URLs to prevent caching
+function addTimestampToImageUrl(imageUrl: string): string {
+  const timestamp = Date.now();
+  const separator = imageUrl.includes('?') ? '&' : '?';
+  return `${imageUrl}${separator}t=${timestamp}`;
+}
+
+// Enhanced function to set strong cache-busting headers
+function setNoCacheHeaders(headers: Headers): void {
+  // Standard cache control headers
+  headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  headers.set('Pragma', 'no-cache');
+  headers.set('Expires', '0');
+  
+  // Social media specific cache headers
+  headers.set('X-Robots-Tag', 'noarchive');
+  
+  // Facebook specific
+  headers.set('X-FB-Debug', Date.now().toString());
+  
+  // Twitter/X specific
+  headers.set('X-Twitter-Cache', 'MISS');
+  
+  // LinkedIn specific
+  headers.set('X-LinkedIn-Cache-Control', 'no-cache');
+  
+  // Vary header to differentiate responses by user agent
+  headers.set('Vary', 'User-Agent');
+}
+
 // Main edge function handler
 export default async function handler(req: Request, context: Context) {
   console.log("Processing request for URL:", req.url);
@@ -356,8 +386,8 @@ export default async function handler(req: Request, context: Context) {
     const blogPostDescription = getHardcodedBlogDescription(slug);
     console.log("Using hardcoded blog post description:", blogPostDescription);
     
-    // Standard blog post image
-    const imageUrl = "https://enrizhulati.com/images/blog-social-image.jpg";
+    // Standard blog post image with timestamp to prevent caching
+    const imageUrl = addTimestampToImageUrl("https://enrizhulati.com/images/blog-social-image.jpg");
     
     // Get the original response
     const response = await context.next();
@@ -383,9 +413,17 @@ export default async function handler(req: Request, context: Context) {
       <!-- Open Graph / Facebook (Blog) -->
       <meta property="og:description" content="${blogPostDescription}">
       <meta property="og:image" content="${imageUrl}">
+      <meta property="og:image:width" content="1200">
+      <meta property="og:image:height" content="630">
+      <meta property="og:url" content="https://enrizhulati.com/blog/${slug}">
       <!-- Twitter (Blog) -->
       <meta name="twitter:description" content="${blogPostDescription}">
       <meta name="twitter:image" content="${imageUrl}">
+      <meta name="twitter:url" content="https://enrizhulati.com/blog/${slug}">
+      <!-- Additional cache control meta tags -->
+      <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+      <meta http-equiv="Pragma" content="no-cache">
+      <meta http-equiv="Expires" content="0">
       `;
       
       // Insert the meta tags before the head closing tag
@@ -394,9 +432,7 @@ export default async function handler(req: Request, context: Context) {
     
     // Set better cache headers to ensure crawlers get fresh content
     const responseHeaders = new Headers(response.headers);
-    responseHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
-    responseHeaders.set('Pragma', 'no-cache');
-    responseHeaders.set('Expires', '0');
+    setNoCacheHeaders(responseHeaders);
     
     // Return the updated HTML
     return new Response(updatedHtml, {
@@ -426,15 +462,13 @@ export default async function handler(req: Request, context: Context) {
       ? pageDesc 
       : "Free marketing ROI calculators and tools to help you grow your business online. Measure the impact of SEO, website speed, and conversion optimization.";
     
-    const ogImage = metadata.ogImage || "https://enrizhulati.com/images/tools-collection-preview.jpg";
+    const ogImage = addTimestampToImageUrl(metadata.ogImage || "https://enrizhulati.com/images/tools-collection-preview.jpg");
     
     console.log("Tools page meta:", { title, description, ogImage });
     
     // Set better cache headers to ensure crawlers get fresh content
     const responseHeaders = new Headers(response.headers);
-    responseHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
-    responseHeaders.set('Pragma', 'no-cache');
-    responseHeaders.set('Expires', '0');
+    setNoCacheHeaders(responseHeaders);
     
     // Special meta tags version that ensures visibility in social shares
     const metaTags = `
@@ -457,6 +491,11 @@ export default async function handler(req: Request, context: Context) {
       <meta name="twitter:image" content="${ogImage}">
       <meta name="twitter:site" content="@enrizhulati">
       <meta name="twitter:creator" content="@enrizhulati">
+      
+      <!-- Additional cache control meta tags -->
+      <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+      <meta http-equiv="Pragma" content="no-cache">
+      <meta http-equiv="Expires" content="0">
     `;
     
     // Use our clean method to replace all existing meta tags and add new ones
@@ -490,13 +529,11 @@ export default async function handler(req: Request, context: Context) {
     });
     
     // Use the page's own image if available, or fall back to tool-specific image
-    const ogImage = metadata.ogImage || getToolImage(url);
+    const ogImage = addTimestampToImageUrl(metadata.ogImage || getToolImage(url));
     
     // Set better cache headers to ensure crawlers get fresh content
     const responseHeaders = new Headers(response.headers);
-    responseHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
-    responseHeaders.set('Pragma', 'no-cache');
-    responseHeaders.set('Expires', '0');
+    setNoCacheHeaders(responseHeaders);
     
     // Special meta tags version that ensures visibility in social shares
     const metaTags = `
@@ -519,6 +556,11 @@ export default async function handler(req: Request, context: Context) {
       <meta name="twitter:image" content="${ogImage}">
       <meta name="twitter:site" content="@enrizhulati">
       <meta name="twitter:creator" content="@enrizhulati">
+      
+      <!-- Additional cache control meta tags -->
+      <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+      <meta http-equiv="Pragma" content="no-cache">
+      <meta http-equiv="Expires" content="0">
     `;
     
     // Use our clean method to replace all existing meta tags and add new ones
@@ -537,16 +579,14 @@ export default async function handler(req: Request, context: Context) {
   // Check if we have the default description and handle accordingly
   const description = metadata.ogDescription || metadata.description;
   
-  // Default to the page's own image or fallback to homepage image
-  const ogImage = metadata.ogImage || metadata.twitterImage || "https://enrizhulati.com/images/homepage-preview.jpg";
+  // Default to the page's own image or fallback to homepage image with timestamp
+  const ogImage = addTimestampToImageUrl(metadata.ogImage || metadata.twitterImage || "https://enrizhulati.com/images/homepage-preview.jpg");
   
   console.log("Page meta:", { title, description, ogImage });
   
   // Set better cache headers to ensure crawlers get fresh content
   const responseHeaders = new Headers(response.headers);
-  responseHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
-  responseHeaders.set('Pragma', 'no-cache');
-  responseHeaders.set('Expires', '0');
+  setNoCacheHeaders(responseHeaders);
   
   // Special meta tags version that ensures visibility in social shares
   const metaTags = `
@@ -569,6 +609,11 @@ export default async function handler(req: Request, context: Context) {
     <meta name="twitter:image" content="${ogImage}">
     <meta name="twitter:site" content="@enrizhulati">
     <meta name="twitter:creator" content="@enrizhulati">
+    
+    <!-- Additional cache control meta tags -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
   `;
   
   // Use our clean method to replace all existing meta tags and add new ones
