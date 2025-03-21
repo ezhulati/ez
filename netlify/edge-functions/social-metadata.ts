@@ -446,6 +446,19 @@ export default async function handler(req: Request, context: Context) {
     try {
       blogPost = await getBlogPost(slug);
       console.log("Blog post data fetched from Contentful:", blogPost ? blogPost.fields.title : "Not found");
+      
+      // Add detailed logging for debugging
+      if (blogPost) {
+        console.log("Blog post meta fields debug:");
+        console.log("- metaTitle:", blogPost.fields.metaTitle);
+        console.log("- title:", blogPost.fields.title);
+        console.log("- metaDescription:", blogPost.fields.metaDescription);
+        console.log("- excerpt:", blogPost.fields.excerpt);
+        console.log("- seoKeywords:", blogPost.fields.seoKeywords);
+        console.log("- categories:", blogPost.fields.categories);
+        console.log("- slug:", blogPost.fields.slug);
+        console.log("- customUrl:", blogPost.fields.customUrl);
+      }
     } catch (error) {
       console.error("Error fetching blog post from Contentful:", error);
     }
@@ -458,6 +471,21 @@ export default async function handler(req: Request, context: Context) {
     const blogPostKeywords = blogPost?.fields.seoKeywords?.join(', ') 
       || blogPost?.fields.categories?.join(', ') 
       || "ai content, content creation, content strategy, AI writing, marketing content, SEO content";
+    
+    // Escape HTML characters for meta tag content
+    const escapeHtml = (str: string) => {
+      if (!str) return '';
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+    
+    const safeTitle = escapeHtml(blogPostTitle);
+    const safeDescription = escapeHtml(blogPostDescription);
+    const safeKeywords = escapeHtml(blogPostKeywords);
     
     // Use dynamic image URLs for regular browsers
     const imageUrl = blogPost?.fields.featuredImage?.fields?.file?.url 
@@ -488,16 +516,16 @@ export default async function handler(req: Request, context: Context) {
     if (headEndPos !== -1) {
       const metaTags = `
       <!-- SEO Meta Tags -->
-      <meta name="description" content="${blogPostDescription}">
-      <meta name="keywords" content="${blogPostKeywords}">
+      <meta name="description" content="${safeDescription}">
+      <meta name="keywords" content="${safeKeywords}">
       <link rel="canonical" href="${canonicalUrl}">
       
       <!-- Open Graph / Facebook -->
       <meta property="og:type" content="article">
       <meta property="og:url" content="${canonicalUrl}">
       <meta property="og:site_name" content="Enri Zhulati">
-      <meta property="og:title" content="${blogPostTitle}">
-      <meta property="og:description" content="${blogPostDescription}">
+      <meta property="og:title" content="${safeTitle}">
+      <meta property="og:description" content="${safeDescription}">
       <meta property="og:image" content="${imageUrl}">
       <meta property="article:published_time" content="${blogPost?.fields.articlePublishDate || blogPost?.fields.publishedDate || '2023-07-15T08:00:00+00:00'}">
       <meta property="article:author" content="https://enrizhulati.com">
@@ -505,8 +533,8 @@ export default async function handler(req: Request, context: Context) {
       <!-- Twitter -->
       <meta name="twitter:card" content="${blogPost?.fields.twitterCardType || 'summary_large_image'}">
       <meta name="twitter:site" content="@enrizhulati">
-      <meta name="twitter:title" content="${blogPostTitle}">
-      <meta name="twitter:description" content="${blogPostDescription}">
+      <meta name="twitter:title" content="${safeTitle}">
+      <meta name="twitter:description" content="${safeDescription}">
       <meta name="twitter:image" content="${imageUrl}">
       
       <!-- Prerender instructions -->
@@ -521,8 +549,8 @@ export default async function handler(req: Request, context: Context) {
           "@type": "WebPage",
           "@id": "${canonicalUrl}"
         },
-        "headline": "${blogPostTitle}",
-        "description": "${blogPostDescription}",
+        "headline": "${safeTitle}",
+        "description": "${safeDescription}",
         "image": "${imageUrl}",
         "author": {
           "@type": "Person",
@@ -537,7 +565,7 @@ export default async function handler(req: Request, context: Context) {
             "url": "https://enrizhulati.com/images/logo.png"
           }
         },
-        "keywords": "${blogPostKeywords}",
+        "keywords": "${safeKeywords}",
         "datePublished": "${blogPost?.fields.articlePublishDate || blogPost?.fields.publishedDate || '2023-07-15T08:00:00+00:00'}",
         "dateModified": "${blogPost?.fields.articleModifiedDate || blogPost?.sys.updatedAt || '2023-08-30T10:00:00+00:00'}"
       }
