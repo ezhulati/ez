@@ -182,7 +182,7 @@ export default async function handler(req: Request, context: Context) {
       ? `https:${post.fields.featuredImage.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
       : post.fields.image?.fields?.file?.url 
         ? `https:${post.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
-        : null;
+        : "https://enrizhulati.com/images/blog-social-image.jpg";
     
     // Create metadata tags
     const metaTags = `
@@ -225,13 +225,10 @@ export default async function handler(req: Request, context: Context) {
       responseHeaders.set('Cache-Control', 'public, max-age=60, s-maxage=300');
     }
     
-    // Remove existing meta tags and insert our new ones
+    // Approach 2: Safer method that adds our critical tags at the top of head
     const updatedHtml = html.replace(
-      /<title>.*?<\/title>|<meta\s+(?:name|property)=["'](?:description|keywords|og:.*?|twitter:.*?)["']\s+content=["'].*?["']\s*\/?>/gi,
-      ''
-    ).replace(
-      '</head>',
-      `${metaTags}\n</head>`
+      '<head>',
+      `<head>\n${metaTags}\n`
     );
     
     // Return the modified HTML with updated headers
@@ -287,13 +284,10 @@ export default async function handler(req: Request, context: Context) {
         <meta name="twitter:creator" content="@enrizhulati">
       `;
       
-      // Remove existing OG and Twitter tags and insert our enhanced ones
+      // Approach 2: Safer method that adds our critical tags at the top of head
       const updatedHtml = html.replace(
-        /<meta\s+(?:property|name)=["'](?:og:.*?|twitter:.*?)["']\s+content=["'].*?["']\s*\/?>/gi,
-        ''
-      ).replace(
-        '</head>',
-        `${metaTags}\n</head>`
+        '<head>',
+        `<head>\n${metaTags}\n`
       );
       
       // Return the modified HTML with updated headers
