@@ -294,30 +294,17 @@ function extractMetadata(html: string): {
 
 // Helper function to clean HTML of existing meta tags and add new metadata
 function cleanAndAddMetadata(html: string, metaTags: string): string {
-  console.log("Original HTML head meta tags:", html.match(/<meta[^>]*>/gi));
+  // Remove existing meta tags to avoid duplicates
+  let updatedHtml = html.replace(/<meta\s+(name|property)=["'](description|keywords|og:[^"']*|twitter:[^"']*)["'][^>]*>/gi, '');
   
-  // First, remove all existing Open Graph and Twitter tags
-  let cleanedHtml = html.replace(/<meta\s+property="og:[^>]*>/gi, '');
-  cleanedHtml = cleanedHtml.replace(/<meta\s+name="twitter:[^>]*>/gi, '');
+  // Find the position to insert our meta tags
+  const headEndPos = updatedHtml.indexOf('</head>');
+  if (headEndPos !== -1) {
+    // Insert the meta tags just before </head>
+    updatedHtml = updatedHtml.slice(0, headEndPos) + metaTags + updatedHtml.slice(headEndPos);
+  }
   
-  // More aggressive approach to remove meta description and title tags - try multiple patterns
-  cleanedHtml = cleanedHtml.replace(/<meta\s+name=["']description["'][^>]*>/gi, '');
-  cleanedHtml = cleanedHtml.replace(/<meta\s+name=description[^>]*>/gi, '');
-  cleanedHtml = cleanedHtml.replace(/<meta\s+content=[^>]*\s+name=["']description["'][^>]*>/gi, '');
-  
-  // Also remove title tags (except the main title tag)
-  cleanedHtml = cleanedHtml.replace(/<meta\s+name=["']title["'][^>]*>/gi, '');
-  cleanedHtml = cleanedHtml.replace(/<meta\s+name=title[^>]*>/gi, '');
-  cleanedHtml = cleanedHtml.replace(/<meta\s+content=[^>]*\s+name=["']title["'][^>]*>/gi, '');
-  
-  console.log("Cleaned HTML - removed meta tags:", cleanedHtml.match(/<meta[^>]*>/gi));
-  console.log("Adding new meta tags:", metaTags);
-  
-  // Now add our new meta tags right after the head opening tag
-  return cleanedHtml.replace(
-    '<head>',
-    `<head>\n${metaTags}\n`
-  );
+  return updatedHtml;
 }
 
 // Get specific image for a tool page based on the tool URL
@@ -473,8 +460,8 @@ export default async function handler(req: Request, context: Context) {
     // For regular browsers, update the existing HTML
     let updatedHtml = html;
     
-    // Remove existing meta tags
-    updatedHtml = updatedHtml.replace(/<meta\s+(name|property)=["'](description|og:[^"']*|twitter:[^"']*)["'][^>]*>/gi, '');
+    // Remove existing meta tags including keywords
+    updatedHtml = updatedHtml.replace(/<meta\s+(name|property)=["'](description|keywords|og:[^"']*|twitter:[^"']*)["'][^>]*>/gi, '');
     
     // Get the position to insert our meta tags
     const headEndPos = updatedHtml.indexOf('</head>');
