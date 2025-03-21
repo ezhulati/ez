@@ -46,6 +46,23 @@ The application supports Contentful preview mode, allowing you to view draft con
 - Create preview links by appending `?preview=true` to any blog post URL
 - Preview mode is stored in localStorage and persists between sessions until toggled off
 
+## Automated Sitemap Generation
+
+The site automatically generates a `sitemap.xml` file during the build process. This sitemap includes:
+
+- Static pages
+- Blog posts (fetched from Contentful API)
+- Tool pages
+
+When you publish new content in Contentful, a webhook triggers a new Netlify build, which automatically updates the sitemap.
+
+### Sitemap Scripts
+
+- `npm run generate-sitemap` - Generate the sitemap manually
+- `CONTENTFUL_MANAGEMENT_TOKEN=your_token node scripts/setup-contentful-webhook.js` - Set up the Contentful webhook
+
+The sitemap is automatically generated during each build and placed in both the `public/` and `dist/` directories.
+
 ## Netlify Integration
 
 This project includes a Netlify configuration file with webhook support for automatic deployments when content is published in Contentful.
@@ -53,8 +70,13 @@ This project includes a Netlify configuration file with webhook support for auto
 To set up the webhook:
 
 1. Deploy the site to Netlify
-2. Get the build hook URL from Netlify
-3. Add the webhook in Contentful settings to trigger on publish events
+2. Get the build hook URL from Netlify (already configured in `netlify.toml` as `CONTENTFUL_REBUILD_HOOK`)
+3. Run the webhook setup script:
+   ```
+   CONTENTFUL_MANAGEMENT_TOKEN=your_token node scripts/setup-contentful-webhook.js
+   ```
+   
+This will create a webhook in Contentful that triggers a Netlify build whenever content is published or unpublished.
 
 ## Development
 
