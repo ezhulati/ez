@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Compass, Calculator, LineChart, ArrowRight } from 'lucide-react';
+import { Compass, Calculator, LineChart, ArrowRight, Search } from 'lucide-react';
 
 const Tools = () => {
   // Website URL for canonical and schema
@@ -87,6 +87,17 @@ const Tools = () => {
                   "price": "0",
                   "priceCurrency": "USD"
                 }
+              },
+              {
+                "@type": "SoftwareApplication",
+                "name": "SEO ROI Calculator",
+                "applicationCategory": "UtilityApplication",
+                "url": `${websiteUrl}/tools/seo-roi-calculator`,
+                "offers": {
+                  "@type": "Offer",
+                  "price": "0",
+                  "priceCurrency": "USD"
+                }
               }
             ]
           })}
@@ -150,6 +161,22 @@ const Tools = () => {
                     "price": "0"
                   },
                   "keywords": "conversion rate, revenue impact, marketing ROI, CRO calculator"
+                }
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "item": {
+                  "@type": "SoftwareApplication",
+                  "name": "SEO ROI Calculator",
+                  "description": "Forecast the return on your SEO investment. Calculate how improved keyword rankings impact your traffic, conversions, and revenue.",
+                  "applicationCategory": "UtilityApplication",
+                  "url": `${websiteUrl}/tools/seo-roi-calculator`,
+                  "offers": {
+                    "@type": "Offer",
+                    "price": "0"
+                  },
+                  "keywords": "seo roi calculator, seo investment, keyword rankings, organic traffic estimator"
                 }
               }
             ],
@@ -223,22 +250,26 @@ const Tools = () => {
             </div>
 
             {/* More tools coming soon placeholder */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-100 dark:border-gray-700 flex flex-col opacity-50">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden border border-gray-100 dark:border-gray-700 flex flex-col">
               <div className="p-4 sm:p-6 flex-grow">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
-                  <Compass className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
+                  <Search className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
                 </div>
                 <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  More Tools Coming Soon
+                  SEO ROI Calculator
                 </h3>
                 <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-                  We're working on more tools to help optimize your marketing efforts.
+                  Calculate the potential revenue impact of your SEO investments based on ranking improvements.
                 </p>
               </div>
               <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-1 sm:pt-2">
-                <span className="inline-flex items-center text-gray-400 dark:text-gray-500 font-medium text-sm sm:text-base">
-                  <span>Stay tuned</span>
-                </span>
+                <Link 
+                  to="/tools/seo-roi-calculator" 
+                  className="inline-flex items-center text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-medium"
+                >
+                  <span>Try the calculator</span>
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
               </div>
             </div>
           </div>

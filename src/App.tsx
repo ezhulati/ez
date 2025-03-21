@@ -52,6 +52,7 @@ const Tools = lazy(() => import('./pages/Tools'));
 const SpeedRoiCalculator = lazy(() => import('./pages/SpeedRoiCalculator'));
 const ConversionRateCalculator = lazy(() => import('./pages/ConversionRateCalculator'));
 const SEORoiCalculatorPage = lazy(() => import('./pages/SEORoiCalculator'));
+const ContentfulDebug = lazy(() => import('./pages/ContentfulDebug'));
 
 // Loading fallback for lazy components
 const ComponentLoader = () => (
@@ -224,6 +225,7 @@ function App() {
               <Route path="/tools/speed-roi-calculator" element={<SpeedRoiCalculator />} />
               <Route path="/tools/conversion-rate-calculator" element={<ConversionRateCalculator />} />
               <Route path="/tools/seo-roi-calculator" element={<SEORoiCalculatorPage />} />
+              <Route path="/contentful-debug" element={<ContentfulDebug />} />
             </Routes>
           </Suspense>
         </main>

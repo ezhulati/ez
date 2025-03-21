@@ -6,6 +6,6 @@ echo "📦 Building the project..."
 npm run build
 
 echo "🚀 Deploying to Netlify..."
-netlify deploy --prod
+npx netlify deploy --prod
 
 echo "✅ Deployment complete!" 
