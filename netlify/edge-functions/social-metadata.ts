@@ -227,6 +227,9 @@ function cleanAndAddMetadata(html: string, metaTags: string): string {
   let cleanedHtml = html.replace(/<meta\s+property="og:[^>]*>/gi, '');
   cleanedHtml = cleanedHtml.replace(/<meta\s+name="twitter:[^>]*>/gi, '');
   
+  // Also remove existing meta description tags
+  cleanedHtml = cleanedHtml.replace(/<meta\s+name="description"[^>]*>/gi, '');
+  
   // Now add our new meta tags right after the head opening tag
   return cleanedHtml.replace(
     '<head>',
@@ -254,6 +257,10 @@ function getToolImage(url: string): string {
 
 // Main edge function handler
 export default async function handler(req: Request, context: Context) {
+  // Force our handler to run for all requests, not just social bots during development/testing
+  // You can remove this line in production if you only want this to affect social bots
+  const forceMeta = true;
+
   const url = req.url;
   
   // Check if this is a crawler or social media bot by examining the User-Agent
@@ -320,7 +327,7 @@ export default async function handler(req: Request, context: Context) {
     const responseHeaders = new Headers(response.headers);
     
     // Don't cache for social bots
-    if (isSocialBot) {
+    if (isSocialBot || forceMeta) {
       responseHeaders.set('Cache-Control', 'no-store, max-age=0');
     } else {
       // Cache for regular visitors but revalidate
@@ -337,7 +344,7 @@ export default async function handler(req: Request, context: Context) {
   }
   
   // For pages other than blog posts, only proceed if it's a social bot or we're testing
-  if (isSocialBot) {
+  if (isSocialBot || forceMeta) {
     // Get the original response
     const response = await context.next();
     const html = await response.text();
@@ -360,6 +367,7 @@ export default async function handler(req: Request, context: Context) {
       // Special meta tags version that ensures visibility in social shares
       const metaTags = `
         <!-- Open Graph / Facebook - Enhanced for Social Sharing -->
+        <meta name="description" content="${description}">
         <meta property="og:type" content="website">
         <meta property="og:url" content="${url}">
         <meta property="og:title" content="${title}">
@@ -405,6 +413,7 @@ export default async function handler(req: Request, context: Context) {
       // Special meta tags version that ensures visibility in social shares
       const metaTags = `
         <!-- Open Graph / Facebook - Enhanced for Social Sharing -->
+        <meta name="description" content="${description}">
         <meta property="og:type" content="website">
         <meta property="og:url" content="${url}">
         <meta property="og:title" content="${title}">
@@ -447,6 +456,7 @@ export default async function handler(req: Request, context: Context) {
     // Special meta tags version that ensures visibility in social shares
     const metaTags = `
       <!-- Open Graph / Facebook - Enhanced for Social Sharing -->
+      <meta name="description" content="${description}">
       <meta property="og:type" content="website">
       <meta property="og:url" content="${url}">
       <meta property="og:title" content="${title}">
