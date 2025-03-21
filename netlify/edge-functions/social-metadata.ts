@@ -221,6 +221,19 @@ function extractMetadata(html: string): {
   return defaults;
 }
 
+// Helper function to clean HTML of existing OG and Twitter tags and add new metadata
+function cleanAndAddMetadata(html: string, metaTags: string): string {
+  // First, remove all existing Open Graph and Twitter tags
+  let cleanedHtml = html.replace(/<meta\s+property="og:[^>]*>/gi, '');
+  cleanedHtml = cleanedHtml.replace(/<meta\s+name="twitter:[^>]*>/gi, '');
+  
+  // Now add our new meta tags right after the head opening tag
+  return cleanedHtml.replace(
+    '<head>',
+    `<head>\n${metaTags}\n`
+  );
+}
+
 // Get specific image for a tool page based on the tool URL
 function getToolImage(url: string): string {
   const pathname = new URL(url).pathname;
@@ -291,11 +304,11 @@ export default async function handler(req: Request, context: Context) {
       <meta property="og:locale" content="en_US">
       
       <!-- Twitter -->
-      <meta property="twitter:card" content="${post.fields.twitterCardType || 'summary_large_image'}">
-      <meta property="twitter:url" content="https://enrizhulati.com/blog/${post.fields.customUrl || slug}">
-      <meta property="twitter:title" content="${post.fields.ogTitle || post.fields.metaTitle || post.fields.title}">
-      <meta property="twitter:description" content="${post.fields.ogDescription || post.fields.metaDescription || post.fields.excerpt || ''}">
-      ${imageUrl ? `<meta property="twitter:image" content="${imageUrl}">` : ''}
+      <meta name="twitter:card" content="${post.fields.twitterCardType || 'summary_large_image'}">
+      <meta name="twitter:url" content="https://enrizhulati.com/blog/${post.fields.customUrl || slug}">
+      <meta name="twitter:title" content="${post.fields.ogTitle || post.fields.metaTitle || post.fields.title}">
+      <meta name="twitter:description" content="${post.fields.ogDescription || post.fields.metaDescription || post.fields.excerpt || ''}">
+      ${imageUrl ? `<meta name="twitter:image" content="${imageUrl}">` : ''}
       <meta name="twitter:site" content="@enrizhulati">
       <meta name="twitter:creator" content="@enrizhulati">
       
@@ -314,11 +327,8 @@ export default async function handler(req: Request, context: Context) {
       responseHeaders.set('Cache-Control', 'public, max-age=60, s-maxage=300');
     }
     
-    // Approach 2: Safer method that adds our critical tags at the top of head
-    const updatedHtml = html.replace(
-      '<head>',
-      `<head>\n${metaTags}\n`
-    );
+    // Use our clean method to replace all existing meta tags and add new ones
+    const updatedHtml = cleanAndAddMetadata(html, metaTags);
     
     // Return the modified HTML with updated headers
     return new Response(updatedHtml, {
@@ -367,11 +377,8 @@ export default async function handler(req: Request, context: Context) {
         <meta name="twitter:creator" content="@enrizhulati">
       `;
       
-      // Approach 2: Safer method that adds our critical tags at the top of head
-      const updatedHtml = html.replace(
-        '<head>',
-        `<head>\n${metaTags}\n`
-      );
+      // Use our clean method to replace all existing meta tags and add new ones
+      const updatedHtml = cleanAndAddMetadata(html, metaTags);
       
       // Return the modified HTML with updated headers
       return new Response(updatedHtml, {
@@ -412,11 +419,8 @@ export default async function handler(req: Request, context: Context) {
         <meta name="twitter:creator" content="@enrizhulati">
       `;
       
-      // Approach 2: Safer method that adds our critical tags at the top of head
-      const updatedHtml = html.replace(
-        '<head>',
-        `<head>\n${metaTags}\n`
-      );
+      // Use our clean method to replace all existing meta tags and add new ones
+      const updatedHtml = cleanAndAddMetadata(html, metaTags);
       
       // Return the modified HTML with updated headers
       return new Response(updatedHtml, {
@@ -455,11 +459,8 @@ export default async function handler(req: Request, context: Context) {
       <meta name="twitter:creator" content="@enrizhulati">
     `;
     
-    // Approach 2: Safer method that adds our critical tags at the top of head
-    const updatedHtml = html.replace(
-      '<head>',
-      `<head>\n${metaTags}\n`
-    );
+    // Use our clean method to replace all existing meta tags and add new ones
+    const updatedHtml = cleanAndAddMetadata(html, metaTags);
     
     // Return the modified HTML with updated headers
     return new Response(updatedHtml, {
