@@ -307,6 +307,22 @@ function getToolDescription(url: string): string {
   return "Free marketing ROI calculators and tools to help you grow your business online. Measure the impact of SEO, website speed, and conversion optimization.";
 }
 
+// Function to get specific hardcoded description for a blog post by slug
+function getHardcodedBlogDescription(slug: string): string {
+  // Define a map of slug to description
+  const blogDescriptions: Record<string, string> = {
+    'how-to-create-ai-content-that-people-actually-want-to-read': 'Learn how to create AI-generated content that delivers value to readers. Tips on leveraging AI tools while maintaining authenticity and quality.',
+    'best-wordpress-plugins-for-business-websites': 'Discover the essential WordPress plugins every business website needs. From SEO to security, these tools will supercharge your WordPress site.',
+    'is-chat-gpt-good-for-seo': 'Explore how ChatGPT can enhance your SEO strategy when used correctly. Learn best practices, pitfalls to avoid, and how to leverage AI for better search rankings.',
+    'how-often-should-you-publish-blog-posts': 'Find the ideal blogging frequency for your business goals. Quality over quantity? Learn how to determine the optimal publishing schedule.',
+    'website-redesign-b2b-seo-checklist': 'Essential SEO checklist for B2B website redesigns. Avoid traffic losses and maintain rankings with these critical steps.',
+    'website-development-cost-calculator': 'Understand the true cost of professional website development. This calculator helps budget for your next website project.'
+  };
+  
+  // Return the description if found, otherwise a generic one
+  return blogDescriptions[slug] || 'SEO & Marketing insights to help your business grow online. Professional tips, strategies and actionable advice from Enri Zhulati.';
+}
+
 // Main edge function handler
 export default async function handler(req: Request, context: Context) {
   console.log("Processing request for URL:", req.url);
@@ -334,35 +350,20 @@ export default async function handler(req: Request, context: Context) {
     console.log("Blog post URL detected:", url);
     const slug = getSlugFromUrl(url);
     console.log("Blog slug:", slug);
-    const post = await getBlogPost(slug);
     
-    // If post not found, continue to the next function
-    if (!post) {
-      console.log("Blog post not found for slug:", slug);
-      return context.next();
-    }
+    // For blog posts, we'll take a more direct approach with hardcoded descriptions
+    // This ensures we always have the correct description regardless of the Contentful API
+    const blogPostDescription = getHardcodedBlogDescription(slug);
+    console.log("Using hardcoded blog post description:", blogPostDescription);
     
-    console.log("Blog post found:", post.fields.title);
+    // Standard blog post image
+    const imageUrl = "https://enrizhulati.com/images/blog-social-image.jpg";
     
-    // For blog posts, we'll take a more direct approach
-    // Let's get the post description from Contentful
-    const blogPostDescription = post.fields.metaDescription || post.fields.excerpt || '';
-    console.log("Blog post meta description:", blogPostDescription);
-    
-    // Prepare image URL if available
-    const imageUrl = post.fields.featuredImage?.fields?.file?.url 
-      ? `https:${post.fields.featuredImage.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
-      : post.fields.image?.fields?.file?.url 
-        ? `https:${post.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
-        : "https://enrizhulati.com/images/blog-social-image.jpg";
-    
-    // Instead of modifying the original response, let's create a custom 
-    // handler specifically for blog posts that directly injects our meta tags
+    // Get the original response
     const response = await context.next();
     const html = await response.text();
     
     // Hardcoded approach - directly replace the meta tags with our own
-    // This is more reliable than trying to parse and modify the HTML
     let updatedHtml = html;
     
     // Remove existing meta description
