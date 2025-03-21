@@ -86,6 +86,14 @@ console.log('Contentful Config:', {
   environment: import.meta.env.VITE_CONTENTFUL_ENVIRONMENT || 'master',
 });
 
+// Log environment variables with more details for debugging
+console.log('Contentful Config:', {
+  spaceId: import.meta.env.VITE_CONTENTFUL_SPACE_ID ? `Set: ${import.meta.env.VITE_CONTENTFUL_SPACE_ID}` : 'Not set',
+  accessToken: import.meta.env.VITE_CONTENTFUL_ACCESS_TOKEN ? `Set: ${import.meta.env.VITE_CONTENTFUL_ACCESS_TOKEN.substring(0, 5)}...` : 'Not set',
+  previewToken: import.meta.env.VITE_CONTENTFUL_PREVIEW_TOKEN ? `Set: ${import.meta.env.VITE_CONTENTFUL_PREVIEW_TOKEN.substring(0, 5)}...` : 'Not set',
+  environment: import.meta.env.VITE_CONTENTFUL_ENVIRONMENT || 'master',
+});
+
 // Create a standard delivery client
 const client = createClient({
   space: import.meta.env.VITE_CONTENTFUL_SPACE_ID as string,
