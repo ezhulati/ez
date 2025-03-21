@@ -421,116 +421,70 @@ export default async function handler(req: Request, context: Context) {
   const requestUrl = new URL(url);
   const canonicalUrl = `https://enrizhulati.com${requestUrl.pathname}`;
   
-  // Comprehensive bot detection - moved to the very beginning
+  // Get user agent for bot detection
   const userAgent = req.headers.get('User-Agent') || '';
   console.log("User-Agent:", userAgent);
   
-  // Expanded bot detection to catch ALL possible social crawlers
-  const isSocialBot = /facebookexternalhit|FacebookBot|LinkedInBot|linkedin|twitter|Twitterbot|Pinterest|WhatsApp|Slack|TelegramBot|Googlebot|bingbot|google-inspectiontool|Baiduspider|Yandex|Bytespider|Discordbot|W3C_Validator|Embedly|Mastodon|Applebot|facebot|ia_archiver|paperli|flipboard|Snapchat|preview|Viber|Skype|WhatsApp|vkShare|Electron|HeadlessChrome|prerender|MSIE|Trident|TelegramBot|Bingbot/i.test(userAgent);
+  // Comprehensive bot detection for prerender
+  const isBot = /bot|googlebot|bingbot|yandex|baiduspider|twitterbot|facebookexternalhit|LinkedInBot|snapchat|pinterest|vkShare|W3C_Validator|whatsapp|telegrambot|slackbot|discordbot|Applebot|Embedly|ia_archiver|prerender|HeadlessChrome|Lighthouse|Bytespider|MSIE|bingpreview|Twitterbot|googlebot-image|discord|curl|wget/i.test(userAgent);
   
-  console.log(`Is social bot: ${isSocialBot}`);
-
-  // If this is a social bot, handle it with an absolute minimum static response
-  if (isSocialBot) {
-    console.log("SOCIAL BOT DETECTED - Serving minimal static HTML");
+  // Check for escaped fragment (used by some older crawlers)
+  const hasEscapedFragment = requestUrl.searchParams.has('_escaped_fragment_');
+  
+  // Check if the request should be handled by prerender
+  if (isBot || hasEscapedFragment) {
+    console.log("Bot detected, using prerender.io");
     
-    let title = "Enri Zhulati | SEO & Digital Marketing Consultant";
-    let description = "Professional web development, content creation, and SEO services that help your business get found online.";
-    let imageUrl = "https://enrizhulati.com/images/homepage-preview.jpg";
-    let pageType = "website";
-    
-    // Handle different page types
-    if (isBlogPostUrl(url)) {
-      const slug = getSlugFromUrl(url);
-      title = getHardcodedBlogTitle(slug);
-      description = getHardcodedBlogDescription(slug);
-      imageUrl = "https://enrizhulati.com/images/blog-social-image.jpg";
-      pageType = "article";
-    } 
-    else if (isSpecificToolPageUrl(url)) {
-      const toolSlug = getToolSlugFromUrl(url);
-      
-      // Set tool-specific title based on slug
-      if (toolSlug.includes('seo-roi-calculator')) {
-        title = "SEO ROI Calculator: Calculate the Value of SEO for Your Business";
-      } else if (toolSlug.includes('speed-roi-calculator')) {
-        title = "Website Speed ROI Calculator: Calculate Revenue Impact of Page Speed";
-      } else if (toolSlug.includes('conversion-rate-calculator')) {
-        title = "Conversion Rate Calculator: See Revenue Impact of CRO";
-      } else {
-        title = "Free Digital Marketing Tools & Calculators | Enri Zhulati";
-      }
-      
-      description = getToolDescription(url);
-      imageUrl = getToolImage(url);
-    }
-    else if (isMainToolsPageUrl(url)) {
-      title = "Free Digital Marketing Tools & Calculators | Enri Zhulati";
-      description = "Free marketing ROI calculators and tools to help you grow your business online. Measure the impact of SEO, website speed, and conversion optimization.";
-      imageUrl = "https://enrizhulati.com/images/tools-collection-preview.jpg";
-    }
-    
-    // Create an absolute minimal HTML response for social bots
-    // Completely static HTML with no timestamps or variable parts
-    const minimalHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>${title}</title>
-<meta name="description" content="${description}">
-<link rel="canonical" href="${canonicalUrl}">
-
-<!-- Open Graph -->
-<meta property="og:title" content="${title}">
-<meta property="og:description" content="${description}">
-<meta property="og:image" content="${imageUrl}">
-<meta property="og:url" content="${canonicalUrl}">
-<meta property="og:type" content="${pageType}">
-<meta property="og:site_name" content="Enri Zhulati">
-
-<!-- Twitter -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="${title}">
-<meta name="twitter:description" content="${description}">
-<meta name="twitter:image" content="${imageUrl}">
-<meta name="twitter:url" content="${canonicalUrl}">
-
-<!-- Basic Schema.org -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "${pageType === 'article' ? 'BlogPosting' : 'WebPage'}",
-  "headline": "${title}",
-  "description": "${description}",
-  "image": "${imageUrl}",
-  "url": "${canonicalUrl}"
-}
-</script>
-</head>
-<body>
-<h1>${title}</h1>
-<img src="${imageUrl}" alt="${title}">
-<p>${description}</p>
-</body>
-</html>`;
-
-    // Set headers optimized for social bots
+    // Get headers to pass to prerender
     const headers = new Headers();
-    headers.set('Content-Type', 'text/html; charset=UTF-8');
-    headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-    headers.set('Vary', 'User-Agent');
+    headers.set('X-Prerender-Token', 'DXHxiXW4lVGsLvOASJvj');
+    headers.set('User-Agent', userAgent);
     
-    // Return the minimal HTML
-    return new Response(minimalHtml, {
-      headers: headers,
-      status: 200
+    // Handle various prerender request headers
+    // Fix for Headers.entries() not being available in some environments
+    const forwardedHeaders = ['x-forwarded-for', 'x-forwarded-proto', 'x-forwarded-host', 'accept-encoding', 'host'];
+    forwardedHeaders.forEach(key => {
+      const value = req.headers.get(key);
+      if (value) {
+        headers.set(key, value);
+      }
     });
+    
+    // Ensure scheme is properly set
+    const prerenderUrl = new URL(canonicalUrl);
+    if (!prerenderUrl.protocol || prerenderUrl.protocol === ':') {
+      prerenderUrl.protocol = 'https:';
+    }
+
+    // Create URL for prerender service
+    const serviceUrl = `https://service.prerender.io/${prerenderUrl.toString()}`;
+    console.log("Prerendering using URL:", serviceUrl);
+    
+    try {
+      // Fetch from prerender.io service
+      const prerenderResponse = await fetch(serviceUrl, {
+        headers: headers,
+        redirect: 'follow',
+      });
+      
+      // Create response headers
+      const responseHeaders = new Headers(prerenderResponse.headers);
+      responseHeaders.set('X-Prerender', 'true');
+      
+      // Return the prerendered content
+      return new Response(await prerenderResponse.text(), {
+        status: prerenderResponse.status,
+        headers: responseHeaders
+      });
+    } catch (error) {
+      console.error("Error using prerender service:", error);
+      
+      // Fall back to normal rendering if prerender fails
+      return context.next();
+    }
   }
 
-  // The rest of the function for regular users
-  // Continue with the original code for non-bot users...
-  
-  // Process blog posts for regular users
+  // For regular users, continue with our existing meta tag enhancement
   if (isBlogPostUrl(url)) {
     console.log("Blog post URL detected for regular user:", url);
     const slug = getSlugFromUrl(url);
@@ -574,6 +528,9 @@ export default async function handler(req: Request, context: Context) {
       <meta name="twitter:title" content="${blogPostTitle}">
       <meta name="twitter:description" content="${blogPostDescription}">
       <meta name="twitter:image" content="${imageUrl}">
+      
+      <!-- Prerender instructions -->
+      <meta name="prerender-status-code" content="200">
       `;
       
       // Insert the meta tags
@@ -665,6 +622,9 @@ export default async function handler(req: Request, context: Context) {
     <meta name="twitter:title" content="${title}">
     <meta name="twitter:description" content="${description}">
     <meta name="twitter:image" content="${imageUrl}">
+    
+    <!-- Prerender instructions -->
+    <meta name="prerender-status-code" content="200">
   `;
   
   // Clean the HTML and add the new meta tags
