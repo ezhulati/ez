@@ -362,9 +362,15 @@ export default async function handler(req: Request, context: Context) {
       description: post.fields.metaDescription || post.fields.excerpt || ''
     });
     
-    // Create metadata tags - make sure to format them consistently with the tool pages
-    const metaTags = `
+    // Get everything after the </head> tag to preserve the body content
+    const [headContent, bodyContent] = html.split('</head>');
+    
+    // Create a completely new head section with all the meta tags we need
+    const newHead = `<head>
       <!-- SEO Meta Tags -->
+      <title>${post.fields.metaTitle || post.fields.title}</title>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta name="description" content="${post.fields.metaDescription || post.fields.excerpt || ''}">
       ${post.fields.seoKeywords ? `<meta name="keywords" content="${post.fields.seoKeywords.join(', ')}">` : ''}
       
@@ -389,7 +395,23 @@ export default async function handler(req: Request, context: Context) {
       
       <!-- Canonical -->
       <link rel="canonical" href="${post.fields.canonicalUrl || `https://enrizhulati.com/blog/${post.fields.customUrl || slug}`}">
-    `;
+      
+      <!-- Preserve all other head content except meta description, og, and twitter tags -->
+      ${headContent
+        .replace(/<meta\s+name=["']description["'][^>]*>/gi, '')
+        .replace(/<meta\s+name=description[^>]*>/gi, '')
+        .replace(/<meta\s+content=[^>]*\s+name=["']description["'][^>]*>/gi, '')
+        .replace(/<meta\s+property="og:[^>]*>/gi, '')
+        .replace(/<meta\s+name="twitter:[^>]*>/gi, '')
+        .replace(/<title>.*?<\/title>/i, '')
+      }
+    </head>`;
+    
+    // Construct the new HTML document
+    const updatedHtml = `<!DOCTYPE html>
+<html lang="en">
+${newHead}
+${bodyContent}`;
     
     // Set better cache headers to ensure crawlers get fresh content
     const responseHeaders = new Headers(response.headers);
@@ -399,10 +421,7 @@ export default async function handler(req: Request, context: Context) {
     responseHeaders.set('Pragma', 'no-cache');
     responseHeaders.set('Expires', '0');
     
-    // Use our clean method to replace all existing meta tags and add new ones
-    const updatedHtml = cleanAndAddMetadata(html, metaTags);
-    
-    // Return the modified HTML with updated headers
+    // Return the completely rebuilt HTML document with updated headers
     return new Response(updatedHtml, {
       headers: responseHeaders,
     });
