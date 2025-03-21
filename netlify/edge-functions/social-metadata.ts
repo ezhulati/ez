@@ -421,150 +421,140 @@ export default async function handler(req: Request, context: Context) {
   const requestUrl = new URL(url);
   const canonicalUrl = `https://enrizhulati.com${requestUrl.pathname}`;
   
-  // Comprehensive bot detection - much more thorough than before
+  // Comprehensive bot detection - moved to the very beginning
   const userAgent = req.headers.get('User-Agent') || '';
+  console.log("User-Agent:", userAgent);
   
-  // Detect social media crawlers with an expanded list
-  const isSocialBot = /facebookexternalhit|LinkedInBot|twitter|Twitterbot|Pinterest|WhatsApp|Slack|TelegramBot|Googlebot|bingbot|google-inspectiontool|Baiduspider|Yandex|Bytespider|Discordbot|W3C_Validator|Embedly|Mastodon|Applebot|facebot|ia_archiver|paperli|flipboard/i.test(userAgent);
+  // Expanded bot detection to catch ALL possible social crawlers
+  const isSocialBot = /facebookexternalhit|FacebookBot|LinkedInBot|linkedin|twitter|Twitterbot|Pinterest|WhatsApp|Slack|TelegramBot|Googlebot|bingbot|google-inspectiontool|Baiduspider|Yandex|Bytespider|Discordbot|W3C_Validator|Embedly|Mastodon|Applebot|facebot|ia_archiver|paperli|flipboard|Snapchat|preview|Viber|Skype|WhatsApp|vkShare|Electron|HeadlessChrome|prerender|MSIE|Trident|TelegramBot|Bingbot/i.test(userAgent);
   
-  // Detect mobile devices
-  const isMobileDevice = /Mobile|Android|iPhone|iPad|Windows Phone/i.test(userAgent);
-  
-  console.log(`Request type: Social Bot: ${isSocialBot}, Mobile: ${isMobileDevice}, UserAgent: ${userAgent}`);
+  console.log(`Is social bot: ${isSocialBot}`);
 
-  // Process blog posts
+  // If this is a social bot, handle it with an absolute minimum static response
+  if (isSocialBot) {
+    console.log("SOCIAL BOT DETECTED - Serving minimal static HTML");
+    
+    let title = "Enri Zhulati | SEO & Digital Marketing Consultant";
+    let description = "Professional web development, content creation, and SEO services that help your business get found online.";
+    let imageUrl = "https://enrizhulati.com/images/homepage-preview.jpg";
+    let pageType = "website";
+    
+    // Handle different page types
+    if (isBlogPostUrl(url)) {
+      const slug = getSlugFromUrl(url);
+      title = getHardcodedBlogTitle(slug);
+      description = getHardcodedBlogDescription(slug);
+      imageUrl = "https://enrizhulati.com/images/blog-social-image.jpg";
+      pageType = "article";
+    } 
+    else if (isSpecificToolPageUrl(url)) {
+      const toolSlug = getToolSlugFromUrl(url);
+      
+      // Set tool-specific title based on slug
+      if (toolSlug.includes('seo-roi-calculator')) {
+        title = "SEO ROI Calculator: Calculate the Value of SEO for Your Business";
+      } else if (toolSlug.includes('speed-roi-calculator')) {
+        title = "Website Speed ROI Calculator: Calculate Revenue Impact of Page Speed";
+      } else if (toolSlug.includes('conversion-rate-calculator')) {
+        title = "Conversion Rate Calculator: See Revenue Impact of CRO";
+      } else {
+        title = "Free Digital Marketing Tools & Calculators | Enri Zhulati";
+      }
+      
+      description = getToolDescription(url);
+      imageUrl = getToolImage(url);
+    }
+    else if (isMainToolsPageUrl(url)) {
+      title = "Free Digital Marketing Tools & Calculators | Enri Zhulati";
+      description = "Free marketing ROI calculators and tools to help you grow your business online. Measure the impact of SEO, website speed, and conversion optimization.";
+      imageUrl = "https://enrizhulati.com/images/tools-collection-preview.jpg";
+    }
+    
+    // Create an absolute minimal HTML response for social bots
+    // Completely static HTML with no timestamps or variable parts
+    const minimalHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>${title}</title>
+<meta name="description" content="${description}">
+<link rel="canonical" href="${canonicalUrl}">
+
+<!-- Open Graph -->
+<meta property="og:title" content="${title}">
+<meta property="og:description" content="${description}">
+<meta property="og:image" content="${imageUrl}">
+<meta property="og:url" content="${canonicalUrl}">
+<meta property="og:type" content="${pageType}">
+<meta property="og:site_name" content="Enri Zhulati">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${title}">
+<meta name="twitter:description" content="${description}">
+<meta name="twitter:image" content="${imageUrl}">
+<meta name="twitter:url" content="${canonicalUrl}">
+
+<!-- Basic Schema.org -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "${pageType === 'article' ? 'BlogPosting' : 'WebPage'}",
+  "headline": "${title}",
+  "description": "${description}",
+  "image": "${imageUrl}",
+  "url": "${canonicalUrl}"
+}
+</script>
+</head>
+<body>
+<h1>${title}</h1>
+<img src="${imageUrl}" alt="${title}">
+<p>${description}</p>
+</body>
+</html>`;
+
+    // Set headers optimized for social bots
+    const headers = new Headers();
+    headers.set('Content-Type', 'text/html; charset=UTF-8');
+    headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    headers.set('Vary', 'User-Agent');
+    
+    // Return the minimal HTML
+    return new Response(minimalHtml, {
+      headers: headers,
+      status: 200
+    });
+  }
+
+  // The rest of the function for regular users
+  // Continue with the original code for non-bot users...
+  
+  // Process blog posts for regular users
   if (isBlogPostUrl(url)) {
-    console.log("Blog post URL detected:", url);
+    console.log("Blog post URL detected for regular user:", url);
     const slug = getSlugFromUrl(url);
-    console.log("Blog slug:", slug);
     
     // For blog posts, use hardcoded values for reliability
     const blogPostTitle = getHardcodedBlogTitle(slug);
     const blogPostDescription = getHardcodedBlogDescription(slug);
     
-    // Use static image URLs without dynamic parameters for social sharing
-    // Social platforms often cache the first version they see, so avoid timestamps
-    const staticImageUrl = "https://enrizhulati.com/images/blog-social-image.jpg";
-    
-    // Date information for article schema
-    const publishDate = new Date().toISOString();
+    // Use dynamic image URLs for regular browsers
+    const imageUrl = addTimestampToImageUrl("https://enrizhulati.com/images/blog-social-image.jpg");
     
     // Get the original response
     const response = await context.next();
     const html = await response.text();
     
-    // Create a completely new response for social bots
-    if (isSocialBot) {
-      console.log("Generating optimized response for social bot");
-      
-      // Set up response headers for social bots - focus on cache control
-      const responseHeaders = new Headers(response.headers);
-      responseHeaders.set('Content-Type', 'text/html; charset=UTF-8');
-      responseHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-      responseHeaders.set('Pragma', 'no-cache');
-      responseHeaders.set('Expires', '0');
-      
-      // Create a specialized minimal HTML document for social crawlers
-      // This is what professional sites do - serve a simplified version to bots
-      const socialBotHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${blogPostTitle}</title>
-  
-  <!-- Essential meta tags -->
-  <meta name="description" content="${blogPostDescription}">
-  <link rel="canonical" href="${canonicalUrl}">
-  
-  <!-- Schema.org for Google -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    "headline": "${blogPostTitle}",
-    "image": "${staticImageUrl}",
-    "datePublished": "${publishDate}",
-    "dateModified": "${publishDate}",
-    "author": {
-      "@type": "Person",
-      "name": "Enri Zhulati"
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "Enri Zhulati",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://enrizhulati.com/images/logo.png"
-      }
-    },
-    "description": "${blogPostDescription}"
-  }
-  </script>
-  
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="article">
-  <meta property="og:url" content="${canonicalUrl}">
-  <meta property="og:site_name" content="Enri Zhulati">
-  <meta property="og:title" content="${blogPostTitle}">
-  <meta property="og:description" content="${blogPostDescription}">
-  <meta property="og:image" content="${staticImageUrl}">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="${blogPostTitle}">
-  <meta property="article:author" content="https://enrizhulati.com/about">
-  <meta property="article:published_time" content="${publishDate}">
-  
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:site" content="@enrizhulati">
-  <meta name="twitter:creator" content="@enrizhulati">
-  <meta name="twitter:url" content="${canonicalUrl}">
-  <meta name="twitter:title" content="${blogPostTitle}">
-  <meta name="twitter:description" content="${blogPostDescription}">
-  <meta name="twitter:image" content="${staticImageUrl}">
-  <meta name="twitter:image:alt" content="${blogPostTitle}">
-  
-  <!-- LinkedIn -->
-  <meta property="linkedin:owner" content="Enri Zhulati">
-  <meta property="linkedin:title" content="${blogPostTitle}">
-  <meta property="linkedin:description" content="${blogPostDescription}">
-  <meta property="linkedin:image" content="${staticImageUrl}">
-  
-  <!-- WhatsApp -->
-  <meta property="og:site_name" content="Enri Zhulati">
-  <meta property="og:title" content="${blogPostTitle}">
-  <meta property="og:description" content="${blogPostDescription}">
-  <meta property="og:image" content="${staticImageUrl}">
-</head>
-<body>
-  <h1>${blogPostTitle}</h1>
-  <p>${blogPostDescription}</p>
-  <img src="${staticImageUrl}" alt="${blogPostTitle}" />
-  <p>Visit <a href="${canonicalUrl}">Enri Zhulati's blog</a> to read the full article.</p>
-</body>
-</html>`;
-
-      // Return the specialized version for bots
-      return new Response(socialBotHtml, {
-        headers: responseHeaders,
-      });
-    }
-    
-    // For regular browsers, update the existing HTML similar to before
-    // But use a cleaner, more thorough approach to replacing meta tags
+    // For regular browsers, update the existing HTML
     let updatedHtml = html;
     
-    // Remove existing meta tags with a more comprehensive approach
-    // Use a single regex to catch all meta tags we want to replace
+    // Remove existing meta tags
     updatedHtml = updatedHtml.replace(/<meta\s+(name|property)=["'](description|og:[^"']*|twitter:[^"']*)["'][^>]*>/gi, '');
     
     // Get the position to insert our meta tags
     const headEndPos = updatedHtml.indexOf('</head>');
     if (headEndPos !== -1) {
-      // Create meta tags with timestamps for regular browsers
-      const imageUrl = addTimestampToImageUrl(staticImageUrl);
-      
       const metaTags = `
       <!-- SEO Meta Tags -->
       <meta name="description" content="${blogPostDescription}">
@@ -577,19 +567,13 @@ export default async function handler(req: Request, context: Context) {
       <meta property="og:title" content="${blogPostTitle}">
       <meta property="og:description" content="${blogPostDescription}">
       <meta property="og:image" content="${imageUrl}">
-      <meta property="og:image:width" content="1200">
-      <meta property="og:image:height" content="630">
-      <meta property="og:image:alt" content="${blogPostTitle}">
       
       <!-- Twitter -->
       <meta name="twitter:card" content="summary_large_image">
       <meta name="twitter:site" content="@enrizhulati">
-      <meta name="twitter:creator" content="@enrizhulati">
-      <meta name="twitter:url" content="${canonicalUrl}">
       <meta name="twitter:title" content="${blogPostTitle}">
       <meta name="twitter:description" content="${blogPostDescription}">
       <meta name="twitter:image" content="${imageUrl}">
-      <meta name="twitter:image:alt" content="${blogPostTitle}">
       `;
       
       // Insert the meta tags
@@ -604,327 +588,60 @@ export default async function handler(req: Request, context: Context) {
     return new Response(updatedHtml, {
       headers: responseHeaders,
     });
-  }
+  } 
   
-  // Process tool pages with similar bot-specific optimizations
-  if (isSpecificToolPageUrl(url)) {
-    console.log("Specific tool page detected:", url);
-    const toolSlug = getToolSlugFromUrl(url);
-    
-    // Get the original response
-    const response = await context.next();
-    const html = await response.text();
-    
-    // Extract metadata from the HTML
-    const metadata = extractMetadata(html);
-    
-    // Determine the appropriate title
-    let title = metadata.ogTitle || metadata.twitterTitle || metadata.title;
-    
-    // Check if title is the generic site title and replace if needed
-    if (!title || title === "Enri Zhulati" || title === "Growth Advisor - Web Development & Digital Strategy") {
-      // Use tool-specific title based on slug
-      if (toolSlug.includes('seo-roi-calculator')) {
-        title = "SEO ROI Calculator: Calculate the Value of SEO for Your Business";
-      } else if (toolSlug.includes('speed-roi-calculator')) {
-        title = "Website Speed ROI Calculator: Calculate Revenue Impact of Page Speed";
-      } else if (toolSlug.includes('conversion-rate-calculator')) {
-        title = "Conversion Rate Calculator: See Revenue Impact of CRO";
-      } else {
-        title = "Free Digital Marketing Tools & Calculators | Enri Zhulati";
-      }
-    }
-    
-    // Get the appropriate description
-    const pageDesc = metadata.ogDescription || metadata.description;
-    const toolDesc = getToolDescription(url);
-    const description = (pageDesc && pageDesc !== "Professional web development, content creation, and SEO services that help your business get found online. Clear strategies and measurable results at transparent pricing.") 
-      ? pageDesc 
-      : toolDesc;
-    
-    // Use static URLs for social media bots
-    const staticImageUrl = getToolImage(url);
-    
-    // For social bots, create a specialized minimal HTML document
-    if (isSocialBot) {
-      console.log("Generating optimized response for social bot");
-      
-      // Set up response headers
-      const responseHeaders = new Headers(response.headers);
-      responseHeaders.set('Content-Type', 'text/html; charset=UTF-8');
-      responseHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-      responseHeaders.set('Pragma', 'no-cache');
-      responseHeaders.set('Expires', '0');
-      
-      const socialBotHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${title}</title>
-  
-  <!-- Essential meta tags -->
-  <meta name="description" content="${description}">
-  <link rel="canonical" href="${canonicalUrl}">
-  
-  <!-- Schema.org for Google -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "${title}",
-    "image": "${staticImageUrl}",
-    "description": "${description}",
-    "applicationCategory": "BusinessApplication",
-    "offers": {
-      "@type": "Offer",
-      "price": "0.00",
-      "priceCurrency": "USD"
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "Enri Zhulati",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://enrizhulati.com/images/logo.png"
-      }
-    }
-  }
-  </script>
-  
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="${canonicalUrl}">
-  <meta property="og:site_name" content="Enri Zhulati">
-  <meta property="og:title" content="${title}">
-  <meta property="og:description" content="${description}">
-  <meta property="og:image" content="${staticImageUrl}">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="${title}">
-  
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:site" content="@enrizhulati">
-  <meta name="twitter:creator" content="@enrizhulati">
-  <meta name="twitter:url" content="${canonicalUrl}">
-  <meta name="twitter:title" content="${title}">
-  <meta name="twitter:description" content="${description}">
-  <meta name="twitter:image" content="${staticImageUrl}">
-  <meta name="twitter:image:alt" content="${title}">
-  
-  <!-- LinkedIn -->
-  <meta property="linkedin:owner" content="Enri Zhulati">
-  <meta property="linkedin:title" content="${title}">
-  <meta property="linkedin:description" content="${description}">
-  <meta property="linkedin:image" content="${staticImageUrl}">
-  
-  <!-- WhatsApp -->
-  <meta property="og:site_name" content="Enri Zhulati">
-  <meta property="og:title" content="${title}">
-  <meta property="og:description" content="${description}">
-  <meta property="og:image" content="${staticImageUrl}">
-</head>
-<body>
-  <h1>${title}</h1>
-  <p>${description}</p>
-  <img src="${staticImageUrl}" alt="${title}" />
-  <p>Visit <a href="${canonicalUrl}">Enri Zhulati's tools</a> to use this calculator.</p>
-</body>
-</html>`;
-
-      // Return the specialized version
-      return new Response(socialBotHtml, {
-        headers: responseHeaders,
-      });
-    }
-    
-    // For regular browsers, update the existing HTML
-    // This code is similar to before but more streamlined
-    const responseHeaders = new Headers(response.headers);
-    setNoCacheHeaders(responseHeaders);
-    
-    // Prepare the meta tags with dynamic timestamps for regular browsers
-    const imageUrl = addTimestampToImageUrl(staticImageUrl);
-    
-    const metaTags = `
-      <!-- Essential meta tags -->
-      <meta name="description" content="${description}">
-      <link rel="canonical" href="${canonicalUrl}">
-      
-      <!-- Open Graph / Facebook -->
-      <meta property="og:type" content="website">
-      <meta property="og:url" content="${canonicalUrl}">
-      <meta property="og:site_name" content="Enri Zhulati">
-      <meta property="og:title" content="${title}">
-      <meta property="og:description" content="${description}">
-      <meta property="og:image" content="${imageUrl}">
-      <meta property="og:image:width" content="1200">
-      <meta property="og:image:height" content="630">
-      <meta property="og:image:alt" content="${title}">
-      
-      <!-- Twitter -->
-      <meta name="twitter:card" content="summary_large_image">
-      <meta name="twitter:site" content="@enrizhulati">
-      <meta name="twitter:creator" content="@enrizhulati">
-      <meta name="twitter:url" content="${canonicalUrl}">
-      <meta name="twitter:title" content="${title}">
-      <meta name="twitter:description" content="${description}">
-      <meta name="twitter:image" content="${imageUrl}">
-      <meta name="twitter:image:alt" content="${title}">
-    `;
-    
-    // Clean the HTML and add the new meta tags
-    const updatedHtml = cleanAndAddMetadata(html, metaTags);
-    
-    // Return the modified HTML
-    return new Response(updatedHtml, {
-      headers: responseHeaders,
-    });
-  }
-  
-  // For the main tools page and all other pages, use a similar approach
-  // Get the original response
+  // For all other page types (tools, homepage, etc.)
+  // Get the original response for regular users
   const response = await context.next();
   const html = await response.text();
   
   // Extract existing metadata
   const metadata = extractMetadata(html);
   
-  // For different page types, we'll follow similar patterns to above
-  // This is a simplified version that focuses on the homepage
-  const pathname = new URL(url).pathname;
-  let title = metadata.ogTitle || metadata.twitterTitle || metadata.title;
+  // Determine title and description based on the page type
+  let title = metadata.ogTitle || metadata.twitterTitle || metadata.title || "Enri Zhulati | SEO & Digital Marketing Consultant";
+  let description = metadata.ogDescription || metadata.description || "Professional web development, content creation, and SEO services that help your business get found online.";
   
-  // Check if title is using the generic site title
-  if (!title || title === "Growth Advisor - Web Development & Digital Strategy") {
-    // For homepage
-    if (pathname === "/" || pathname === "") {
-      title = "Enri Zhulati | SEO & Digital Marketing Consultant";
-    } else {
-      // Generate a title from the pathname
-      const pageName = pathname.split('/').pop() || '';
-      const formattedPageName = pageName
-        .split('-')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-      title = formattedPageName ? `${formattedPageName} | Enri Zhulati` : "Enri Zhulati | SEO & Digital Marketing Consultant";
-    }
-  }
-  
-  // Get the description
-  let description = metadata.ogDescription || metadata.description;
-  
-  // If we're on the main tools page, use a specific description
-  if (isMainToolsPageUrl(url)) {
-    description = "Free marketing ROI calculators and tools to help you grow your business online. Measure the impact of SEO, website speed, and conversion optimization.";
-    title = "Free Digital Marketing Tools & Calculators | Enri Zhulati";
-  }
-  
-  // Use static images for social bots
-  const staticImageUrl = pathname === "/" || pathname === "" 
-    ? "https://enrizhulati.com/images/homepage-preview.jpg"
-    : isMainToolsPageUrl(url) 
-      ? "https://enrizhulati.com/images/tools-collection-preview.jpg"
-      : metadata.ogImage || "https://enrizhulati.com/images/homepage-preview.jpg";
-  
-  // For social bots, create a specialized HTML document
-  if (isSocialBot) {
-    console.log("Generating optimized response for social bot");
+  // Handle tool pages for regular users
+  if (isSpecificToolPageUrl(url)) {
+    const toolSlug = getToolSlugFromUrl(url);
     
-    // Set up response headers
-    const responseHeaders = new Headers(response.headers);
-    responseHeaders.set('Content-Type', 'text/html; charset=UTF-8');
-    responseHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-    responseHeaders.set('Pragma', 'no-cache');
-    responseHeaders.set('Expires', '0');
-    
-    // Create specialized HTML for social crawlers
-    const schemaType = pathname === "/" || pathname === "" ? "WebSite" : "WebPage";
-    
-    const socialBotHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${title}</title>
-  
-  <!-- Essential meta tags -->
-  <meta name="description" content="${description}">
-  <link rel="canonical" href="${canonicalUrl}">
-  
-  <!-- Schema.org for Google -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "${schemaType}",
-    "name": "${title}",
-    "image": "${staticImageUrl}",
-    "description": "${description}",
-    "publisher": {
-      "@type": "Organization",
-      "name": "Enri Zhulati",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://enrizhulati.com/images/logo.png"
+    // Use tool-specific title if needed
+    if (!title || title === "Enri Zhulati" || title === "Growth Advisor - Web Development & Digital Strategy") {
+      if (toolSlug.includes('seo-roi-calculator')) {
+        title = "SEO ROI Calculator: Calculate the Value of SEO for Your Business";
+      } else if (toolSlug.includes('speed-roi-calculator')) {
+        title = "Website Speed ROI Calculator: Calculate Revenue Impact of Page Speed";
+      } else if (toolSlug.includes('conversion-rate-calculator')) {
+        title = "Conversion Rate Calculator: See Revenue Impact of CRO";
       }
     }
-  }
-  </script>
-  
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="${canonicalUrl}">
-  <meta property="og:site_name" content="Enri Zhulati">
-  <meta property="og:title" content="${title}">
-  <meta property="og:description" content="${description}">
-  <meta property="og:image" content="${staticImageUrl}">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="${title}">
-  
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:site" content="@enrizhulati">
-  <meta name="twitter:creator" content="@enrizhulati">
-  <meta name="twitter:url" content="${canonicalUrl}">
-  <meta name="twitter:title" content="${title}">
-  <meta name="twitter:description" content="${description}">
-  <meta name="twitter:image" content="${staticImageUrl}">
-  <meta name="twitter:image:alt" content="${title}">
-  
-  <!-- LinkedIn -->
-  <meta property="linkedin:owner" content="Enri Zhulati">
-  <meta property="linkedin:title" content="${title}">
-  <meta property="linkedin:description" content="${description}">
-  <meta property="linkedin:image" content="${staticImageUrl}">
-  
-  <!-- WhatsApp -->
-  <meta property="og:site_name" content="Enri Zhulati">
-  <meta property="og:title" content="${title}">
-  <meta property="og:description" content="${description}">
-  <meta property="og:image" content="${staticImageUrl}">
-</head>
-<body>
-  <h1>${title}</h1>
-  <p>${description}</p>
-  <img src="${staticImageUrl}" alt="${title}" />
-  <p>Visit <a href="${canonicalUrl}">Enri Zhulati's website</a> to learn more.</p>
-</body>
-</html>`;
-
-    // Return the specialized version
-    return new Response(socialBotHtml, {
-      headers: responseHeaders,
-    });
+    
+    // Use tool-specific description if needed
+    const toolDesc = getToolDescription(url);
+    if (!description || description === "Professional web development, content creation, and SEO services that help your business get found online.") {
+      description = toolDesc;
+    }
+  } 
+  // Main tools page
+  else if (isMainToolsPageUrl(url)) {
+    title = "Free Digital Marketing Tools & Calculators | Enri Zhulati";
+    description = "Free marketing ROI calculators and tools to help you grow your business online. Measure the impact of SEO, website speed, and conversion optimization.";
   }
   
-  // For regular browsers, update the existing HTML
+  // Determine image URL based on page type
+  let imageUrl;
+  if (isSpecificToolPageUrl(url)) {
+    imageUrl = addTimestampToImageUrl(getToolImage(url));
+  } else if (isMainToolsPageUrl(url)) {
+    imageUrl = addTimestampToImageUrl("https://enrizhulati.com/images/tools-collection-preview.jpg");
+  } else {
+    imageUrl = addTimestampToImageUrl(metadata.ogImage || "https://enrizhulati.com/images/homepage-preview.jpg");
+  }
+  
+  // For regular browsers, update the existing HTML with meta tags
   const responseHeaders = new Headers(response.headers);
   setNoCacheHeaders(responseHeaders);
-  
-  // Use dynamic timestamps for regular browsers
-  const imageUrl = addTimestampToImageUrl(staticImageUrl);
   
   // Prepare meta tags
   const metaTags = `
@@ -939,9 +656,6 @@ export default async function handler(req: Request, context: Context) {
     <meta property="og:title" content="${title}">
     <meta property="og:description" content="${description}">
     <meta property="og:image" content="${imageUrl}">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="${title}">
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
@@ -951,7 +665,6 @@ export default async function handler(req: Request, context: Context) {
     <meta name="twitter:title" content="${title}">
     <meta name="twitter:description" content="${description}">
     <meta name="twitter:image" content="${imageUrl}">
-    <meta name="twitter:image:alt" content="${title}">
   `;
   
   // Clean the HTML and add the new meta tags
