@@ -11,34 +11,40 @@ const Tools = () => {
   return (
     <>
       <Helmet>
-        {/* Title Tag - 59 characters */}
-        <title>Free Marketing & SEO Tools | Website Calculators & Analyzers</title>
+        {/* Title Tag - 61 characters */}
+        <title>Marketing & SEO Tools | Free Calculators for Digital Success</title>
         
-        {/* Meta Description - 159 characters */}
-        <meta name="description" content="Discover free marketing and SEO tools to boost your online performance. Calculate website speed impact, analyze conversions, and make data-driven decisions for your business." />
+        {/* Meta Description - 160 characters */}
+        <meta name="description" content="Boost your online performance with free marketing calculators and SEO tools. Get instant insights on website speed, conversion rates, and revenue impact to make data-driven growth decisions." />
         
         {/* Meta Keywords */}
-        <meta name="keywords" content="free marketing tools, SEO tools, website speed calculator, conversion calculator, marketing ROI, website performance tools, digital marketing calculators" />
+        <meta name="keywords" content="marketing calculators, free SEO tools, website speed calculator, conversion rate calculator, marketing ROI calculator, website optimization tools, digital marketing tools, revenue impact calculator, CRO tools, website performance calculators" />
         
         {/* Canonical URL */}
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href={pageUrl} />
         
         {/* Open Graph Tags */}
-        <meta property="og:title" content="Free Marketing & SEO Tools Collection | Enri Zhulati" />
-        <meta property="og:description" content="Free marketing tools to help you make data-driven decisions. Includes website speed calculator, conversion rate tools, and more." />
+        <meta property="og:title" content="Free Marketing & SEO Tools | Calculators for Digital Growth" />
+        <meta property="og:description" content="Access free calculators that help you measure website speed impact, conversion rate potential, and marketing ROI. Make data-driven decisions with our suite of digital marketing tools." />
         <meta property="og:url" content={pageUrl} />
         <meta property="og:type" content="website" />
         <meta property="og:image" content={`${websiteUrl}/images/tools-collection-preview.jpg`} />
+        <meta property="og:site_name" content="Enri Zhulati" />
         
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Free Marketing & SEO Tools Collection" />
-        <meta name="twitter:description" content="Free tools to optimize your website and marketing efforts" />
+        <meta name="twitter:description" content="Access practical calculators to measure website speed impact, conversion optimization ROI, and marketing performance. Make smarter business decisions." />
         <meta name="twitter:image" content={`${websiteUrl}/images/tools-collection-preview.jpg`} />
+        <meta name="twitter:site" content="@enrizhulati" />
+        <meta name="twitter:creator" content="@enrizhulati" />
         
         {/* Additional SEO Tags */}
         <meta name="author" content="Enri Zhulati" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="application-name" content="Marketing Tools Suite" />
+        <meta name="rating" content="General" />
         
         {/* Schema.org JSON-LD for CollectionPage */}
         <script type="application/ld+json">
@@ -64,7 +70,18 @@ const Tools = () => {
                 "@type": "SoftwareApplication",
                 "name": "Website Speed Impact Calculator",
                 "applicationCategory": "UtilityApplication",
-                "url": `${pageUrl}/website-speed-impact-calculator`,
+                "url": `${websiteUrl}/tools/speed-roi-calculator`,
+                "offers": {
+                  "@type": "Offer",
+                  "price": "0",
+                  "priceCurrency": "USD"
+                }
+              },
+              {
+                "@type": "SoftwareApplication",
+                "name": "Conversion Rate Calculator",
+                "applicationCategory": "UtilityApplication",
+                "url": `${websiteUrl}/tools/conversion-rate-calculator`,
                 "offers": {
                   "@type": "Offer",
                   "price": "0",
@@ -111,7 +128,7 @@ const Tools = () => {
                   "name": "Website Speed Impact Calculator",
                   "description": "Calculate the potential revenue impact of improving your website's loading speed based on industry conversion rate data.",
                   "applicationCategory": "UtilityApplication",
-                  "url": `${pageUrl}/website-speed-impact-calculator`,
+                  "url": `${websiteUrl}/tools/speed-roi-calculator`,
                   "offers": {
                     "@type": "Offer",
                     "price": "0"
@@ -125,14 +142,14 @@ const Tools = () => {
                 "item": {
                   "@type": "SoftwareApplication",
                   "name": "Conversion Rate Calculator",
-                  "description": "Coming soon - Estimate your conversion rate improvements and revenue impact.",
+                  "description": "Calculate the potential revenue impact of improving your conversion rate. See how small improvements can lead to significant gains.",
                   "applicationCategory": "UtilityApplication",
-                  "url": pageUrl,
+                  "url": `${websiteUrl}/tools/conversion-rate-calculator`,
                   "offers": {
                     "@type": "Offer",
                     "price": "0"
                   },
-                  "keywords": "conversion rate, revenue impact, marketing ROI"
+                  "keywords": "conversion rate, revenue impact, marketing ROI, CRO calculator"
                 }
               }
             ],
