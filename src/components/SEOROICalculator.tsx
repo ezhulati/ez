@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LineChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   ReferenceLine, Line, Legend, BarChart, Bar
@@ -11,11 +11,9 @@ import {
   TrendingUp, 
   BarChart2, 
   Target, 
-  ArrowUpRight, 
   Info, 
   Percent, 
-  Search,
-  Award
+  Search
 } from 'lucide-react';
 
 interface InputValues {
@@ -71,10 +69,6 @@ const SEOROICalculator = () => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [activeTab, setActiveTab] = useState('input');
   
-  // Add refs for tracking previous values to animate value changes
-  const prevInputsRef = useRef<InputValues>(inputs);
-  const [changedFields, setChangedFields] = useState<Record<string, boolean>>({});
-
   // Industry factors for 2025
   const industryFactors = {
     saas: { improvementRate: 2.1, convMultiplier: 1.2, aiDiscoveryBoost: 1.3 },
@@ -127,23 +121,6 @@ const SEOROICalculator = () => {
     const { name, value, type } = e.target as HTMLInputElement;
     
     setInputs(prev => {
-      // Save the previous value
-      prevInputsRef.current = prev;
-      
-      // Mark the field as changed for animation
-      setChangedFields({
-        ...changedFields,
-        [name]: true
-      });
-      
-      // Clear the changed status after animation
-      setTimeout(() => {
-        setChangedFields(prev => ({
-          ...prev,
-          [name]: false
-        }));
-      }, 300);
-      
       return {
         ...prev,
         [name]: type === 'checkbox' 
@@ -695,7 +672,7 @@ const SEOROICalculator = () => {
             
             <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-                <Award className="h-5 w-5 mr-2 text-green-600 dark:text-green-400" />
+                <Target className="h-5 w-5 mr-2 text-green-600 dark:text-green-400" />
                 Next Steps for SEO Success
               </h3>
               <div className="space-y-4">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LineChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   ReferenceLine, Line
@@ -50,7 +50,7 @@ const SpeedROICalculator = () => {
   const [activeTab, setActiveTab] = useState('input');
   
   // Add refs for tracking previous values to animate value changes
-  const prevInputsRef = useRef<InputValues>(inputs);
+  const prevInputsRef = React.useRef<InputValues>(inputs);
   const [changedFields, setChangedFields] = useState<Record<string, boolean>>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

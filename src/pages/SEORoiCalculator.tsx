@@ -1,7 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, Search, TrendingUp, Award, ArrowRight } from 'lucide-react';
+import { ChevronLeft, Search, TrendingUp, ArrowRight } from 'lucide-react';
 import SEOROICalculator from '../components/SEOROICalculator';
 
 const SEORoiCalculatorPage = () => {
@@ -170,7 +170,7 @@ const SEORoiCalculatorPage = () => {
             
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-100 dark:border-gray-700 p-6">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-                <Award className="mr-3 h-6 w-6 text-green-600 dark:text-green-400" />
+                <TrendingUp className="mr-3 h-6 w-6 text-green-600 dark:text-green-400" />
                 Maximize Your SEO Results
               </h2>
               
