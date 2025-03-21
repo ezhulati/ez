@@ -140,7 +140,7 @@ function isBlogPostUrl(url: string): boolean {
 // Check if URL is the main tools page URL
 function isMainToolsPageUrl(url: string): boolean {
   const pathname = new URL(url).pathname;
-  return pathname === '/tools';
+  return pathname === '/tools' || pathname === '/tools/';
 }
 
 // Check if URL is a specific tool page
@@ -163,11 +163,70 @@ function getSlugFromUrl(url: string): string {
   return parts[parts.length - 1];
 }
 
-// Get specific image for a tool page
+// Extract metadata from HTML
+function extractMetadata(html: string): {
+  title: string;
+  description: string;
+  ogTitle: string;
+  ogDescription: string;
+  ogImage: string;
+  twitterTitle: string;
+  twitterDescription: string;
+  twitterImage: string;
+} {
+  // Default values
+  const defaults = {
+    title: 'Enri Zhulati',
+    description: 'SEO & Marketing Consultant helping businesses grow their online presence.',
+    ogTitle: '',
+    ogDescription: '',
+    ogImage: '',
+    twitterTitle: '',
+    twitterDescription: '',
+    twitterImage: ''
+  };
+  
+  // Extract title
+  const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+  if (titleMatch) defaults.title = titleMatch[1];
+  
+  // Extract description
+  const descMatch = html.match(/<meta\s+name="description"\s+content="(.*?)"/i);
+  if (descMatch) defaults.description = descMatch[1];
+  
+  // Extract OG title
+  const ogTitleMatch = html.match(/<meta\s+property="og:title"\s+content="(.*?)"/i);
+  if (ogTitleMatch) defaults.ogTitle = ogTitleMatch[1];
+  
+  // Extract OG description
+  const ogDescMatch = html.match(/<meta\s+property="og:description"\s+content="(.*?)"/i);
+  if (ogDescMatch) defaults.ogDescription = ogDescMatch[1];
+  
+  // Extract OG image
+  const ogImageMatch = html.match(/<meta\s+property="og:image"\s+content="(.*?)"/i);
+  if (ogImageMatch) defaults.ogImage = ogImageMatch[1];
+  
+  // Extract Twitter title
+  const twitterTitleMatch = html.match(/<meta\s+name="twitter:title"\s+content="(.*?)"/i);
+  if (twitterTitleMatch) defaults.twitterTitle = twitterTitleMatch[1];
+  
+  // Extract Twitter description
+  const twitterDescMatch = html.match(/<meta\s+name="twitter:description"\s+content="(.*?)"/i);
+  if (twitterDescMatch) defaults.twitterDescription = twitterDescMatch[1];
+  
+  // Extract Twitter image
+  const twitterImageMatch = html.match(/<meta\s+name="twitter:image"\s+content="(.*?)"/i);
+  if (twitterImageMatch) defaults.twitterImage = twitterImageMatch[1];
+  
+  return defaults;
+}
+
+// Get specific image for a tool page based on the tool URL
 function getToolImage(url: string): string {
   const pathname = new URL(url).pathname;
+  const toolSlug = getToolSlugFromUrl(url);
   
-  // Check for specific tool pages
+  // Check for specific tool pages by slug or pathname
   if (pathname.includes('seo-roi-calculator')) {
     return "https://enrizhulati.com/images/seo-roi-calculator-preview.jpg";
   } else if (pathname.includes('website-speed-impact-calculator') || pathname.includes('speed-roi-calculator')) {
@@ -267,23 +326,21 @@ export default async function handler(req: Request, context: Context) {
     });
   }
   
-  // Process main tools page
-  if (isMainToolsPageUrl(url)) {
+  // For pages other than blog posts, only proceed if it's a social bot or we're testing
+  if (isSocialBot) {
     // Get the original response
     const response = await context.next();
     const html = await response.text();
     
-    // Extract existing meta tags from the HTML
-    const titleMatch = html.match(/<title>(.*?)<\/title>/i);
-    const title = titleMatch ? titleMatch[1] : 'Marketing & SEO Tools';
+    // Extract existing metadata from the HTML
+    const metadata = extractMetadata(html);
     
-    const descMatch = html.match(/<meta\s+name="description"\s+content="(.*?)"/i);
-    const description = descMatch ? descMatch[1] : 'Boost your online performance with marketing calculators and SEO tools.';
-    
-    const ogImage = "https://enrizhulati.com/images/tools-collection-preview.jpg";
-    
-    // Only modify if we're a social bot - regular page rendering should work fine normally
-    if (true || isSocialBot) { // Always apply for testing
+    // Process main tools page
+    if (isMainToolsPageUrl(url)) {
+      const ogImage = metadata.ogImage || "https://enrizhulati.com/images/tools-collection-preview.jpg";
+      const title = metadata.ogTitle || metadata.title || 'Marketing & SEO Tools';
+      const description = metadata.ogDescription || metadata.description || 'Boost your online performance with marketing calculators and SEO tools.';
+      
       // Set better cache headers to ensure crawlers get fresh content
       const responseHeaders = new Headers(response.headers);
       responseHeaders.set('Cache-Control', 'no-store, max-age=0');
@@ -321,26 +378,14 @@ export default async function handler(req: Request, context: Context) {
         headers: responseHeaders,
       });
     }
-  }
-  
-  // Process specific tool pages
-  if (isSpecificToolPageUrl(url)) {
-    // Get the original response
-    const response = await context.next();
-    const html = await response.text();
     
-    // Extract existing meta tags from the HTML
-    const titleMatch = html.match(/<title>(.*?)<\/title>/i);
-    const title = titleMatch ? titleMatch[1] : 'Marketing Tool';
-    
-    const descMatch = html.match(/<meta\s+name="description"\s+content="(.*?)"/i);
-    const description = descMatch ? descMatch[1] : 'Free online marketing calculator to optimize your business performance.';
-    
-    // Get the appropriate image for this specific tool
-    const ogImage = getToolImage(url);
-    
-    // Only modify if we're a social bot - regular page rendering should work fine normally
-    if (true || isSocialBot) { // Always apply for testing
+    // Process specific tool pages
+    if (isSpecificToolPageUrl(url)) {
+      // Get the appropriate image for this specific tool
+      const ogImage = metadata.ogImage || getToolImage(url);
+      const title = metadata.ogTitle || metadata.title || 'Marketing Tool';
+      const description = metadata.ogDescription || metadata.description || 'Free online marketing calculator to optimize your business performance.';
+      
       // Set better cache headers to ensure crawlers get fresh content
       const responseHeaders = new Headers(response.headers);
       responseHeaders.set('Cache-Control', 'no-store, max-age=0');
@@ -378,6 +423,48 @@ export default async function handler(req: Request, context: Context) {
         headers: responseHeaders,
       });
     }
+    
+    // For any other pages (like homepage, etc.)
+    const ogImage = metadata.ogImage || metadata.twitterImage || "https://enrizhulati.com/images/homepage-preview.jpg";
+    const title = metadata.ogTitle || metadata.title || 'Enri Zhulati | SEO & Marketing Consultant';
+    const description = metadata.ogDescription || metadata.description || 'SEO and Marketing Consultant helping businesses grow their online presence through strategic SEO, content marketing and web optimization.';
+    
+    // Set better cache headers to ensure crawlers get fresh content
+    const responseHeaders = new Headers(response.headers);
+    responseHeaders.set('Cache-Control', 'no-store, max-age=0');
+    
+    // Special meta tags version that ensures visibility in social shares
+    const metaTags = `
+      <!-- Open Graph / Facebook - Enhanced for Social Sharing -->
+      <meta property="og:type" content="website">
+      <meta property="og:url" content="${url}">
+      <meta property="og:title" content="${title}">
+      <meta property="og:description" content="${description}">
+      <meta property="og:image" content="${ogImage}">
+      <meta property="og:image:width" content="1200">
+      <meta property="og:image:height" content="630">
+      <meta property="og:site_name" content="Enri Zhulati">
+      
+      <!-- Twitter -->
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:url" content="${url}">
+      <meta name="twitter:title" content="${title}">
+      <meta name="twitter:description" content="${description}">
+      <meta name="twitter:image" content="${ogImage}">
+      <meta name="twitter:site" content="@enrizhulati">
+      <meta name="twitter:creator" content="@enrizhulati">
+    `;
+    
+    // Approach 2: Safer method that adds our critical tags at the top of head
+    const updatedHtml = html.replace(
+      '<head>',
+      `<head>\n${metaTags}\n`
+    );
+    
+    // Return the modified HTML with updated headers
+    return new Response(updatedHtml, {
+      headers: responseHeaders,
+    });
   }
   
   // For all other URLs or if not a social bot, just continue
