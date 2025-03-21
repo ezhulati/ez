@@ -87,25 +87,38 @@ console.log('Contentful Config:', {
 });
 
 // Log environment variables with more details for debugging
-console.log('Contentful Config:', {
+console.log('Contentful Config Details:', {
   spaceId: import.meta.env.VITE_CONTENTFUL_SPACE_ID ? `Set: ${import.meta.env.VITE_CONTENTFUL_SPACE_ID}` : 'Not set',
   accessToken: import.meta.env.VITE_CONTENTFUL_ACCESS_TOKEN ? `Set: ${import.meta.env.VITE_CONTENTFUL_ACCESS_TOKEN.substring(0, 5)}...` : 'Not set',
   previewToken: import.meta.env.VITE_CONTENTFUL_PREVIEW_TOKEN ? `Set: ${import.meta.env.VITE_CONTENTFUL_PREVIEW_TOKEN.substring(0, 5)}...` : 'Not set',
   environment: import.meta.env.VITE_CONTENTFUL_ENVIRONMENT || 'master',
 });
 
+// Fallback to hardcoded values if environment variables aren't available
+const SPACE_ID = import.meta.env.VITE_CONTENTFUL_SPACE_ID || 'hdo1k8om3hmw';
+const ACCESS_TOKEN = import.meta.env.VITE_CONTENTFUL_ACCESS_TOKEN || 'g29C2epdpHoOQsex08PJXphQYxqVWsN-cUZBbO9QA4A';
+const PREVIEW_TOKEN = import.meta.env.VITE_CONTENTFUL_PREVIEW_TOKEN || '81cfBHWQVwo4pe7ZPisFfvJrzpwCy-AHyBEuf_DA5tQ';
+const ENVIRONMENT = import.meta.env.VITE_CONTENTFUL_ENVIRONMENT || 'master';
+
+console.log('Using Contentful Config:', {
+  spaceId: SPACE_ID ? 'Using value' : 'Missing',
+  accessToken: ACCESS_TOKEN ? 'Using value' : 'Missing',
+  previewToken: PREVIEW_TOKEN ? 'Using value' : 'Missing',
+  environment: ENVIRONMENT || 'master',
+});
+
 // Create a standard delivery client
 const client = createClient({
-  space: import.meta.env.VITE_CONTENTFUL_SPACE_ID as string,
-  accessToken: import.meta.env.VITE_CONTENTFUL_ACCESS_TOKEN as string,
-  environment: import.meta.env.VITE_CONTENTFUL_ENVIRONMENT as string || 'master',
+  space: SPACE_ID,
+  accessToken: ACCESS_TOKEN,
+  environment: ENVIRONMENT,
 });
 
 // Create a preview client
 const previewClient = createClient({
-  space: import.meta.env.VITE_CONTENTFUL_SPACE_ID as string,
-  accessToken: import.meta.env.VITE_CONTENTFUL_PREVIEW_TOKEN as string,
-  environment: import.meta.env.VITE_CONTENTFUL_ENVIRONMENT as string || 'master',
+  space: SPACE_ID,
+  accessToken: PREVIEW_TOKEN,
+  environment: ENVIRONMENT,
   host: 'preview.contentful.com'
 });
 
@@ -131,7 +144,7 @@ export const getBlogPosts = async (limit?: number): Promise<BlogPost[]> => {
     try {
       const response = await getClient().getEntries({
         content_type: 'blogPage',
-        order: '-sys.createdAt',
+        order: ['-sys.createdAt'],
         limit: limit || 100,
       });
       console.log('Blog posts found (blogPage):', response.items.length);
@@ -141,7 +154,7 @@ export const getBlogPosts = async (limit?: number): Promise<BlogPost[]> => {
       // If that fails, try with blogPost content type
       const response = await getClient().getEntries({
         content_type: 'blogPost',
-        order: '-sys.createdAt',
+        order: ['-sys.createdAt'],
         limit: limit || 100,
       });
       console.log('Blog posts found (blogPost):', response.items.length);
