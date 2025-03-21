@@ -190,17 +190,45 @@ function extractMetadata(html: string): {
   const titleMatch = html.match(/<title>(.*?)<\/title>/i);
   if (titleMatch) defaults.title = titleMatch[1];
   
-  // Extract description - this should be page-specific
-  const descMatch = html.match(/<meta\s+name="description"\s+content="([^"]*)"[^>]*>/i);
-  if (descMatch) defaults.description = descMatch[1];
+  // Extract description - use multiple patterns to be more reliable
+  const descPatterns = [
+    /<meta\s+name="description"\s+content="([^"]*)"[^>]*>/i,
+    /<meta\s+name='description'\s+content='([^']*)'[^>]*>/i,
+    /<meta\s+name=description\s+content="([^"]*)"[^>]*>/i,
+    /<meta\s+name=description\s+content='([^']*)'[^>]*>/i,
+    /<meta\s+content="([^"]*)"\s+name="description"[^>]*>/i,
+    /<meta\s+content='([^']*)'\s+name="description"[^>]*>/i
+  ];
+  
+  for (const pattern of descPatterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      defaults.description = match[1];
+      console.log("Found description with pattern:", pattern, "Value:", match[1]);
+      break;
+    }
+  }
   
   // Extract OG title - page specific
   const ogTitleMatch = html.match(/<meta\s+property="og:title"\s+content="([^"]*)"[^>]*>/i);
   if (ogTitleMatch) defaults.ogTitle = ogTitleMatch[1];
   
-  // Extract OG description - page specific
-  const ogDescMatch = html.match(/<meta\s+property="og:description"\s+content="([^"]*)"[^>]*>/i);
-  if (ogDescMatch) defaults.ogDescription = ogDescMatch[1];
+  // Extract OG description - page specific - try multiple patterns
+  const ogDescPatterns = [
+    /<meta\s+property="og:description"\s+content="([^"]*)"[^>]*>/i,
+    /<meta\s+property='og:description'\s+content='([^']*)'[^>]*>/i,
+    /<meta\s+content="([^"]*)"\s+property="og:description"[^>]*>/i,
+    /<meta\s+content='([^']*)'\s+property="og:description"[^>]*>/i
+  ];
+  
+  for (const pattern of ogDescPatterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      defaults.ogDescription = match[1];
+      console.log("Found OG description with pattern:", pattern, "Value:", match[1]);
+      break;
+    }
+  }
   
   // Extract OG image - page specific
   const ogImageMatch = html.match(/<meta\s+property="og:image"\s+content="([^"]*)"[^>]*>/i);
@@ -258,6 +286,23 @@ function getToolImage(url: string): string {
   
   // Default tools image
   return "https://enrizhulati.com/images/tools-collection-preview.jpg";
+}
+
+// Get specific description for a tool page based on the tool URL
+function getToolDescription(url: string): string {
+  const pathname = new URL(url).pathname;
+  
+  // Check for specific tool pages by path
+  if (pathname.includes('seo-roi-calculator')) {
+    return "Calculate the ROI of your SEO investment with this free SEO ROI calculator. See projected revenue, rankings, traffic, and leads based on your specific business metrics.";
+  } else if (pathname.includes('website-speed-impact-calculator') || pathname.includes('speed-roi-calculator')) {
+    return "Calculate how website speed impacts your business revenue with our free Website Speed ROI Calculator. See how improving page load time affects conversion rates and revenue.";
+  } else if (pathname.includes('conversion-rate-calculator')) {
+    return "Calculate how small improvements in conversion rate can dramatically impact your business revenue with our free Conversion Rate Calculator.";
+  }
+  
+  // Default tools description
+  return "Free marketing ROI calculators and tools to help you grow your business online. Measure the impact of SEO, website speed, and conversion optimization.";
 }
 
 // Main edge function handler
@@ -376,7 +421,13 @@ export default async function handler(req: Request, context: Context) {
     // For tools main page, prioritize page-specific metadata
     // Only fall back to defaults if we can't find page-specific data
     const title = metadata.ogTitle || metadata.title;
-    const description = metadata.ogDescription || metadata.description;
+    
+    // Check if we have the default description (homepage) and replace it with a tools-specific one
+    const pageDesc = metadata.ogDescription || metadata.description;
+    const description = (pageDesc && pageDesc !== "Professional web development, content creation, and SEO services that help your business get found online. Clear strategies and measurable results at transparent pricing.") 
+      ? pageDesc 
+      : "Free marketing ROI calculators and tools to help you grow your business online. Measure the impact of SEO, website speed, and conversion optimization.";
+    
     const ogImage = metadata.ogImage || "https://enrizhulati.com/images/tools-collection-preview.jpg";
     
     console.log("Tools page meta:", { title, description, ogImage });
@@ -425,12 +476,23 @@ export default async function handler(req: Request, context: Context) {
     // For specific tool pages, always use the page's own metadata first
     // Only fall back to defaults if needed
     const title = metadata.ogTitle || metadata.title;
-    const description = metadata.ogDescription || metadata.description;
+    
+    // First try to get the page's own description, then fall back to our tool-specific descriptions
+    const pageDesc = metadata.ogDescription || metadata.description;
+    const toolDesc = getToolDescription(url);
+    const description = (pageDesc && pageDesc !== "Professional web development, content creation, and SEO services that help your business get found online. Clear strategies and measurable results at transparent pricing.") 
+      ? pageDesc 
+      : toolDesc;
+    
+    console.log("Tool page meta:", { 
+      title, 
+      description,
+      pageDesc,
+      toolDesc
+    });
     
     // Use the page's own image if available, or fall back to tool-specific image
     const ogImage = metadata.ogImage || getToolImage(url);
-    
-    console.log("Tool page meta:", { title, description, ogImage });
     
     // Set better cache headers to ensure crawlers get fresh content
     const responseHeaders = new Headers(response.headers);
@@ -473,6 +535,8 @@ export default async function handler(req: Request, context: Context) {
   // For any other pages (like homepage, etc.)
   console.log("Other page detected:", url);
   const title = metadata.ogTitle || metadata.title;
+  
+  // Check if we have the default description and handle accordingly
   const description = metadata.ogDescription || metadata.description;
   
   // Default to the page's own image or fallback to homepage image
