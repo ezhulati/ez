@@ -137,6 +137,12 @@ function isBlogPostUrl(url: string): boolean {
   return pathname.startsWith('/blog/') && pathname.split('/').length > 2;
 }
 
+// Check if URL is a tools page URL
+function isToolsPageUrl(url: string): boolean {
+  const pathname = new URL(url).pathname;
+  return pathname === '/tools' || pathname.startsWith('/tools/');
+}
+
 // Extract slug from URL
 function getSlugFromUrl(url: string): string {
   const pathname = new URL(url).pathname;
@@ -148,71 +154,155 @@ function getSlugFromUrl(url: string): string {
 export default async function handler(req: Request, context: Context) {
   const url = req.url;
   
-  // Only process blog post URLs
-  if (!isBlogPostUrl(url)) {
-    return context.next();
+  // Check if this is a crawler or social media bot by examining the User-Agent
+  const userAgent = req.headers.get('User-Agent') || '';
+  const isSocialBot = /(facebookexternalhit|LinkedInBot|Twitterbot|WhatsApp|Slackbot|TelegramBot|Pinterest|Google-AMPHTML|Google-PageRenderer)/i.test(userAgent);
+  
+  // Add special handling for social media bots to ensure they get metadata
+  if (isSocialBot) {
+    console.log(`Social media bot detected: ${userAgent}`);
   }
   
-  const slug = getSlugFromUrl(url);
-  const post = await getBlogPost(slug);
-  
-  // If post not found, continue to the next function
-  if (!post) {
-    return context.next();
+  // Process blog posts
+  if (isBlogPostUrl(url)) {
+    const slug = getSlugFromUrl(url);
+    const post = await getBlogPost(slug);
+    
+    // If post not found, continue to the next function
+    if (!post) {
+      return context.next();
+    }
+    
+    // Get the original response
+    const response = await context.next();
+    const html = await response.text();
+    
+    // Prepare image URL if available
+    const imageUrl = post.fields.featuredImage?.fields?.file?.url 
+      ? `https:${post.fields.featuredImage.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
+      : post.fields.image?.fields?.file?.url 
+        ? `https:${post.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
+        : null;
+    
+    // Create metadata tags
+    const metaTags = `
+      <!-- SEO Meta Tags -->
+      <title>${post.fields.metaTitle || post.fields.title}</title>
+      <meta name="description" content="${post.fields.metaDescription || post.fields.excerpt || ''}">
+      ${post.fields.seoKeywords ? `<meta name="keywords" content="${post.fields.seoKeywords.join(', ')}">` : ''}
+      
+      <!-- Open Graph / Facebook -->
+      <meta property="og:type" content="article">
+      <meta property="og:url" content="https://enrizhulati.com/blog/${post.fields.customUrl || slug}">
+      <meta property="og:title" content="${post.fields.ogTitle || post.fields.metaTitle || post.fields.title}">
+      <meta property="og:description" content="${post.fields.ogDescription || post.fields.metaDescription || post.fields.excerpt || ''}">
+      ${imageUrl ? `<meta property="og:image" content="${imageUrl}">` : ''}
+      ${imageUrl ? `<meta property="og:image:width" content="1200">` : ''}
+      ${imageUrl ? `<meta property="og:image:height" content="630">` : ''}
+      <meta property="og:locale" content="en_US">
+      
+      <!-- Twitter -->
+      <meta property="twitter:card" content="${post.fields.twitterCardType || 'summary_large_image'}">
+      <meta property="twitter:url" content="https://enrizhulati.com/blog/${post.fields.customUrl || slug}">
+      <meta property="twitter:title" content="${post.fields.ogTitle || post.fields.metaTitle || post.fields.title}">
+      <meta property="twitter:description" content="${post.fields.ogDescription || post.fields.metaDescription || post.fields.excerpt || ''}">
+      ${imageUrl ? `<meta property="twitter:image" content="${imageUrl}">` : ''}
+      <meta name="twitter:site" content="@enrizhulati">
+      <meta name="twitter:creator" content="@enrizhulati">
+      
+      <!-- Canonical -->
+      <link rel="canonical" href="${post.fields.canonicalUrl || `https://enrizhulati.com/blog/${post.fields.customUrl || slug}`}">
+    `;
+    
+    // Set better cache headers to ensure crawlers get fresh content
+    const responseHeaders = new Headers(response.headers);
+    
+    // Don't cache for social bots
+    if (isSocialBot) {
+      responseHeaders.set('Cache-Control', 'no-store, max-age=0');
+    } else {
+      // Cache for regular visitors but revalidate
+      responseHeaders.set('Cache-Control', 'public, max-age=60, s-maxage=300');
+    }
+    
+    // Remove existing meta tags and insert our new ones
+    const updatedHtml = html.replace(
+      /<title>.*?<\/title>|<meta\s+(?:name|property)=["'](?:description|keywords|og:.*?|twitter:.*?)["']\s+content=["'].*?["']\s*\/?>/gi,
+      ''
+    ).replace(
+      '</head>',
+      `${metaTags}\n</head>`
+    );
+    
+    // Return the modified HTML with updated headers
+    return new Response(updatedHtml, {
+      headers: responseHeaders,
+    });
   }
   
-  // Get the original response
-  const response = await context.next();
-  const html = await response.text();
-  
-  // Prepare image URL if available
-  const imageUrl = post.fields.featuredImage?.fields?.file?.url 
-    ? `https:${post.fields.featuredImage.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
-    : post.fields.image?.fields?.file?.url 
-      ? `https:${post.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
-      : null;
-  
-  // Create metadata tags
-  const metaTags = `
-    <!-- SEO Meta Tags -->
-    <title>${post.fields.metaTitle || post.fields.title}</title>
-    <meta name="description" content="${post.fields.metaDescription || post.fields.excerpt || ''}">
-    ${post.fields.seoKeywords ? `<meta name="keywords" content="${post.fields.seoKeywords.join(', ')}">` : ''}
+  // Process tools pages
+  if (isToolsPageUrl(url)) {
+    // Get the original response
+    const response = await context.next();
+    const html = await response.text();
     
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="article">
-    <meta property="og:url" content="https://enrizhulati.com/blog/${post.fields.customUrl || slug}">
-    <meta property="og:title" content="${post.fields.ogTitle || post.fields.metaTitle || post.fields.title}">
-    <meta property="og:description" content="${post.fields.ogDescription || post.fields.metaDescription || post.fields.excerpt || ''}">
-    ${imageUrl ? `<meta property="og:image" content="${imageUrl}">` : ''}
-    ${imageUrl ? `<meta property="og:image:width" content="1200">` : ''}
-    ${imageUrl ? `<meta property="og:image:height" content="630">` : ''}
-    <meta property="og:locale" content="en_US">
+    // We don't need to fetch from Contentful for tools - the metadata is static in the page
+    // Just ensure it's properly included for social bots
     
-    <!-- Twitter -->
-    <meta property="twitter:card" content="${post.fields.twitterCardType || 'summary_large_image'}">
-    <meta property="twitter:url" content="https://enrizhulati.com/blog/${post.fields.customUrl || slug}">
-    <meta property="twitter:title" content="${post.fields.ogTitle || post.fields.metaTitle || post.fields.title}">
-    <meta property="twitter:description" content="${post.fields.ogDescription || post.fields.metaDescription || post.fields.excerpt || ''}">
-    ${imageUrl ? `<meta property="twitter:image" content="${imageUrl}">` : ''}
-    <meta name="twitter:site" content="@enrizhulati">
-    <meta name="twitter:creator" content="@enrizhulati">
+    // Extract existing meta tags from the HTML
+    const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+    const title = titleMatch ? titleMatch[1] : 'Marketing & SEO Tools';
     
-    <!-- Canonical -->
-    <link rel="canonical" href="${post.fields.canonicalUrl || `https://enrizhulati.com/blog/${post.fields.customUrl || slug}`}">
-  `;
+    const descMatch = html.match(/<meta\s+name="description"\s+content="(.*?)"/i);
+    const description = descMatch ? descMatch[1] : 'Boost your online performance with marketing calculators and SEO tools.';
+    
+    const ogImageMatch = html.match(/<meta\s+property="og:image"\s+content="(.*?)"/i);
+    const ogImage = ogImageMatch ? ogImageMatch[1] : 'https://enrizhulati.com/images/tools-collection-preview.jpg';
+    
+    // Only modify if we're a social bot - regular page rendering should work fine normally
+    if (isSocialBot) {
+      // Set better cache headers to ensure crawlers get fresh content
+      const responseHeaders = new Headers(response.headers);
+      responseHeaders.set('Cache-Control', 'no-store, max-age=0');
+      
+      // Special meta tags version that ensures visibility in social shares
+      const metaTags = `
+        <!-- Open Graph / Facebook - Enhanced for Social Sharing -->
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="${url}">
+        <meta property="og:title" content="${title}">
+        <meta property="og:description" content="${description}">
+        <meta property="og:image" content="${ogImage}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+        <meta property="og:site_name" content="Enri Zhulati">
+        
+        <!-- Twitter -->
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:url" content="${url}">
+        <meta name="twitter:title" content="${title}">
+        <meta name="twitter:description" content="${description}">
+        <meta name="twitter:image" content="${ogImage}">
+        <meta name="twitter:site" content="@enrizhulati">
+        <meta name="twitter:creator" content="@enrizhulati">
+      `;
+      
+      // Remove existing OG and Twitter tags and insert our enhanced ones
+      const updatedHtml = html.replace(
+        /<meta\s+(?:property|name)=["'](?:og:.*?|twitter:.*?)["']\s+content=["'].*?["']\s*\/?>/gi,
+        ''
+      ).replace(
+        '</head>',
+        `${metaTags}\n</head>`
+      );
+      
+      // Return the modified HTML with updated headers
+      return new Response(updatedHtml, {
+        headers: responseHeaders,
+      });
+    }
+  }
   
-  // Remove existing meta tags and insert our new ones
-  const updatedHtml = html.replace(
-    /<title>.*?<\/title>|<meta\s+(?:name|property)=["'](?:description|keywords|og:.*?|twitter:.*?)["']\s+content=["'].*?["']\s*\/?>/gi,
-    ''
-  ).replace(
-    '</head>',
-    `${metaTags}\n</head>`
-  );
-  
-  // Return the modified HTML
-  return new Response(updatedHtml, {
-    headers: response.headers,
-  });
+  // For all other URLs or if not a social bot, just continue
+  return context.next();
 } 

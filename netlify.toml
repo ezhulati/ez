@@ -33,9 +33,32 @@
 [build.processing.images]
   compress = true
 
+# Edge function for blog metadata - special handling for social media crawlers
 [[edge_functions]]
   path = "/blog/*"
   function = "social-metadata"
+
+# Edge function for tools metadata
+[[edge_functions]]
+  path = "/tools"
+  function = "social-metadata"
+
+[[edge_functions]]
+  path = "/tools/*"
+  function = "social-metadata"
+
+# Debug tool for social sharing metadata
+[[edge_functions]]
+  path = "/debug-social"
+  function = "debug-social"
+
+# Cache control headers for blog pages - ensure latest metadata
+[[headers]]
+  for = "/blog/*"
+  [headers.values]
+    Cache-Control = "public, max-age=60, s-maxage=300"
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
 
 [dev]
   framework = "vite"
