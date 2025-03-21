@@ -343,11 +343,11 @@ export default async function handler(req: Request, context: Context) {
     }
     
     console.log("Blog post found:", post.fields.title);
-    console.log("Blog post meta description:", post.fields.metaDescription || post.fields.excerpt || '');
     
-    // Get the original response
-    const response = await context.next();
-    const html = await response.text();
+    // For blog posts, we'll take a more direct approach
+    // Let's get the post description from Contentful
+    const blogPostDescription = post.fields.metaDescription || post.fields.excerpt || '';
+    console.log("Blog post meta description:", blogPostDescription);
     
     // Prepare image URL if available
     const imageUrl = post.fields.featuredImage?.fields?.file?.url 
@@ -356,72 +356,48 @@ export default async function handler(req: Request, context: Context) {
         ? `https:${post.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
         : "https://enrizhulati.com/images/blog-social-image.jpg";
     
-    console.log("Using image URL:", imageUrl);
-    console.log("Blog post meta:", {
-      title: post.fields.metaTitle || post.fields.title,
-      description: post.fields.metaDescription || post.fields.excerpt || ''
-    });
+    // Instead of modifying the original response, let's create a custom 
+    // handler specifically for blog posts that directly injects our meta tags
+    const response = await context.next();
+    const html = await response.text();
     
-    // Get everything after the </head> tag to preserve the body content
-    const [headContent, bodyContent] = html.split('</head>');
+    // Hardcoded approach - directly replace the meta tags with our own
+    // This is more reliable than trying to parse and modify the HTML
+    let updatedHtml = html;
     
-    // Create a completely new head section with all the meta tags we need
-    const newHead = `<head>
-      <!-- SEO Meta Tags -->
-      <title>${post.fields.metaTitle || post.fields.title}</title>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <meta name="description" content="${post.fields.metaDescription || post.fields.excerpt || ''}">
-      ${post.fields.seoKeywords ? `<meta name="keywords" content="${post.fields.seoKeywords.join(', ')}">` : ''}
-      
-      <!-- Open Graph / Facebook -->
-      <meta property="og:type" content="article">
-      <meta property="og:url" content="https://enrizhulati.com/blog/${post.fields.customUrl || slug}">
-      <meta property="og:title" content="${post.fields.ogTitle || post.fields.metaTitle || post.fields.title}">
-      <meta property="og:description" content="${post.fields.ogDescription || post.fields.metaDescription || post.fields.excerpt || ''}">
-      ${imageUrl ? `<meta property="og:image" content="${imageUrl}">` : ''}
-      ${imageUrl ? `<meta property="og:image:width" content="1200">` : ''}
-      ${imageUrl ? `<meta property="og:image:height" content="630">` : ''}
-      <meta property="og:locale" content="en_US">
-      
-      <!-- Twitter -->
-      <meta name="twitter:card" content="${post.fields.twitterCardType || 'summary_large_image'}">
-      <meta name="twitter:url" content="https://enrizhulati.com/blog/${post.fields.customUrl || slug}">
-      <meta name="twitter:title" content="${post.fields.ogTitle || post.fields.metaTitle || post.fields.title}">
-      <meta name="twitter:description" content="${post.fields.ogDescription || post.fields.metaDescription || post.fields.excerpt || ''}">
-      ${imageUrl ? `<meta name="twitter:image" content="${imageUrl}">` : ''}
-      <meta name="twitter:site" content="@enrizhulati">
-      <meta name="twitter:creator" content="@enrizhulati">
-      
-      <!-- Canonical -->
-      <link rel="canonical" href="${post.fields.canonicalUrl || `https://enrizhulati.com/blog/${post.fields.customUrl || slug}`}">
-      
-      <!-- Preserve all other head content except meta description, og, and twitter tags -->
-      ${headContent
-        .replace(/<meta\s+name=["']description["'][^>]*>/gi, '')
-        .replace(/<meta\s+name=description[^>]*>/gi, '')
-        .replace(/<meta\s+content=[^>]*\s+name=["']description["'][^>]*>/gi, '')
-        .replace(/<meta\s+property="og:[^>]*>/gi, '')
-        .replace(/<meta\s+name="twitter:[^>]*>/gi, '')
-        .replace(/<title>.*?<\/title>/i, '')
-      }
-    </head>`;
+    // Remove existing meta description
+    updatedHtml = updatedHtml.replace(/<meta\s+name=["']description["'][^>]*>/gi, '');
+    updatedHtml = updatedHtml.replace(/<meta\s+property=["']og:description["'][^>]*>/gi, '');
+    updatedHtml = updatedHtml.replace(/<meta\s+name=["']twitter:description["'][^>]*>/gi, '');
+    updatedHtml = updatedHtml.replace(/<meta\s+property=["']og:image["'][^>]*>/gi, '');
+    updatedHtml = updatedHtml.replace(/<meta\s+name=["']twitter:image["'][^>]*>/gi, '');
     
-    // Construct the new HTML document
-    const updatedHtml = `<!DOCTYPE html>
-<html lang="en">
-${newHead}
-${bodyContent}`;
+    // Get the position to insert our meta tags (right after head opening)
+    const headEndPos = updatedHtml.indexOf('</head>');
+    if (headEndPos !== -1) {
+      // Insert our meta tags right before the head closing tag
+      const metaTags = `
+      <!-- SEO Meta Tags (Blog) -->
+      <meta name="description" content="${blogPostDescription}">
+      <!-- Open Graph / Facebook (Blog) -->
+      <meta property="og:description" content="${blogPostDescription}">
+      <meta property="og:image" content="${imageUrl}">
+      <!-- Twitter (Blog) -->
+      <meta name="twitter:description" content="${blogPostDescription}">
+      <meta name="twitter:image" content="${imageUrl}">
+      `;
+      
+      // Insert the meta tags before the head closing tag
+      updatedHtml = updatedHtml.slice(0, headEndPos) + metaTags + updatedHtml.slice(headEndPos);
+    }
     
     // Set better cache headers to ensure crawlers get fresh content
     const responseHeaders = new Headers(response.headers);
-    
-    // Never cache these responses to ensure fresh content
     responseHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
     responseHeaders.set('Pragma', 'no-cache');
     responseHeaders.set('Expires', '0');
     
-    // Return the completely rebuilt HTML document with updated headers
+    // Return the updated HTML
     return new Response(updatedHtml, {
       headers: responseHeaders,
     });
