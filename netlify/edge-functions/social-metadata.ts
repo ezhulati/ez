@@ -294,8 +294,19 @@ function extractMetadata(html: string): {
 
 // Helper function to clean HTML of existing meta tags and add new metadata
 function cleanAndAddMetadata(html: string, metaTags: string): string {
-  // Remove existing meta tags to avoid duplicates
-  let updatedHtml = html.replace(/<meta\s+(name|property)=["'](description|keywords|og:[^"']*|twitter:[^"']*)["'][^>]*>/gi, '');
+  // More targeted approach to remove meta tags
+  let updatedHtml = html;
+  
+  // First, remove all existing keywords meta tags
+  updatedHtml = updatedHtml.replace(/<meta\s+name=["']keywords["'][^>]*>/gi, '');
+  
+  // Then remove other meta tags we'll be replacing
+  updatedHtml = updatedHtml.replace(/<meta\s+name=["']description["'][^>]*>/gi, '');
+  updatedHtml = updatedHtml.replace(/<meta\s+property=["']og:[^"']*["'][^>]*>/gi, '');
+  updatedHtml = updatedHtml.replace(/<meta\s+name=["']twitter:[^"']*["'][^>]*>/gi, '');
+  
+  // Remove canonical links
+  updatedHtml = updatedHtml.replace(/<link\s+rel=["']canonical["'][^>]*>/gi, '');
   
   // Find the position to insert our meta tags
   const headEndPos = updatedHtml.indexOf('</head>');
@@ -460,8 +471,17 @@ export default async function handler(req: Request, context: Context) {
     // For regular browsers, update the existing HTML
     let updatedHtml = html;
     
-    // Remove existing meta tags including keywords
-    updatedHtml = updatedHtml.replace(/<meta\s+(name|property)=["'](description|keywords|og:[^"']*|twitter:[^"']*)["'][^>]*>/gi, '');
+    // More targeted approach to remove meta tags
+    // First, remove all existing keywords meta tags
+    updatedHtml = updatedHtml.replace(/<meta\s+name=["']keywords["'][^>]*>/gi, '');
+    
+    // Then remove other meta tags we'll be replacing
+    updatedHtml = updatedHtml.replace(/<meta\s+name=["']description["'][^>]*>/gi, '');
+    updatedHtml = updatedHtml.replace(/<meta\s+property=["']og:[^"']*["'][^>]*>/gi, '');
+    updatedHtml = updatedHtml.replace(/<meta\s+name=["']twitter:[^"']*["'][^>]*>/gi, '');
+    
+    // Remove canonical links
+    updatedHtml = updatedHtml.replace(/<link\s+rel=["']canonical["'][^>]*>/gi, '');
     
     // Get the position to insert our meta tags
     const headEndPos = updatedHtml.indexOf('</head>');
