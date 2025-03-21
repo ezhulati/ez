@@ -12,21 +12,21 @@ const Tools = () => {
     <>
       <Helmet>
         {/* Title Tag - 61 characters */}
-        <title>Marketing & SEO Tools | Free Calculators for Digital Success</title>
+        <title>Marketing & SEO Tools | Calculators for Digital Success</title>
         
         {/* Meta Description - 160 characters */}
-        <meta name="description" content="Boost your online performance with free marketing calculators and SEO tools. Get instant insights on website speed, conversion rates, and revenue impact to make data-driven growth decisions." />
+        <meta name="description" content="Boost your online performance with marketing calculators and SEO tools. Get instant insights on website speed, conversion rates, and revenue impact to make data-driven growth decisions." />
         
         {/* Meta Keywords */}
-        <meta name="keywords" content="marketing calculators, free SEO tools, website speed calculator, conversion rate calculator, marketing ROI calculator, website optimization tools, digital marketing tools, revenue impact calculator, CRO tools, website performance calculators" />
+        <meta name="keywords" content="marketing calculators, SEO tools, website speed calculator, conversion rate calculator, marketing ROI calculator, website optimization tools, digital marketing tools, revenue impact calculator, CRO tools, website performance calculators" />
         
         {/* Canonical URL */}
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href={pageUrl} />
         
         {/* Open Graph Tags */}
-        <meta property="og:title" content="Free Marketing & SEO Tools | Calculators for Digital Growth" />
-        <meta property="og:description" content="Access free calculators that help you measure website speed impact, conversion rate potential, and marketing ROI. Make data-driven decisions with our suite of digital marketing tools." />
+        <meta property="og:title" content="Marketing & SEO Tools | Calculators for Digital Growth" />
+        <meta property="og:description" content="Access calculators that help you measure website speed impact, conversion rate potential, and marketing ROI. Make data-driven decisions with our suite of digital marketing tools." />
         <meta property="og:url" content={pageUrl} />
         <meta property="og:type" content="website" />
         <meta property="og:image" content={`${websiteUrl}/images/tools-collection-preview.jpg`} />
@@ -34,7 +34,7 @@ const Tools = () => {
         
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Free Marketing & SEO Tools Collection" />
+        <meta name="twitter:title" content="Marketing & SEO Tools Collection" />
         <meta name="twitter:description" content="Access practical calculators to measure website speed impact, conversion optimization ROI, and marketing performance. Make smarter business decisions." />
         <meta name="twitter:image" content={`${websiteUrl}/images/tools-collection-preview.jpg`} />
         <meta name="twitter:site" content="@enrizhulati" />
@@ -51,8 +51,8 @@ const Tools = () => {
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "CollectionPage",
-            "name": "Free Marketing & SEO Tools",
-            "description": "A collection of free marketing and SEO tools to help businesses improve their online performance and make data-driven decisions.",
+            "name": "Marketing & SEO Tools",
+            "description": "A collection of marketing and SEO tools to help businesses improve their online performance and make data-driven decisions.",
             "url": pageUrl,
             "author": {
               "@type": "Person",
@@ -155,8 +155,8 @@ const Tools = () => {
             ],
             "mainEntityOfPage": {
               "@type": "WebPage",
-              "name": "Free Marketing & SEO Tools",
-              "description": "A collection of free calculators and analyzers for digital marketing and website optimization."
+              "name": "Marketing & SEO Tools",
+              "description": "A collection of calculators and analyzers for digital marketing and website optimization."
             }
           })}
         </script>
@@ -166,7 +166,7 @@ const Tools = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white md:text-5xl">
-              <span className="text-blue-600 dark:text-blue-400">Free</span> Marketing Tools
+              <span className="text-blue-600 dark:text-blue-400">Pro</span> Marketing Tools
             </h1>
             <p className="mt-3 sm:mt-4 text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
               Practical tools to help you make data-driven decisions, optimize your website performance, and boost your marketing ROI.
@@ -232,7 +232,7 @@ const Tools = () => {
                   More Tools Coming Soon
                 </h3>
                 <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-                  We're working on more free tools to help optimize your marketing efforts.
+                  We're working on more tools to help optimize your marketing efforts.
                 </p>
               </div>
               <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-1 sm:pt-2">
