@@ -4,6 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
+    <!-- Prerender.io specific signals -->
+    <meta name="fragment" content="!">
+    <meta name="prerender-status-code" content="200">
+    <script>
+      // Signal to prerender.io when the page is fully loaded
+      document.addEventListener('DOMContentLoaded', function() {
+        if (window.prerenderReady === undefined) {
+          window.prerenderReady = false;
+        }
+        
+        // Set prerenderReady to true when the React app is ready
+        setTimeout(function() {
+          window.prerenderReady = true;
+        }, 2000);
+      });
+    </script>
+    
     <!-- Preconnect to critical origins -->
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
     <link rel="preconnect" href="https://www.clarity.ms" crossorigin>

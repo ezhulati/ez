@@ -13,7 +13,7 @@ import BackToTop from './components/BackToTop';
 // Make sure Lottie animations are initialized
 import { ensureLottiePlayerLoaded } from './patches/performance-patches';
 
-// Add dotlottie-player type definition
+// For prerender.io to detect when the app is fully loaded
 declare global {
   namespace JSX {
     interface IntrinsicElements {
@@ -28,6 +28,10 @@ declare global {
         renderer?: string;
       };
     }
+  }
+  
+  interface Window {
+    prerenderReady?: boolean;
   }
 }
 
@@ -117,6 +121,27 @@ function App() {
   // Scroll to top on route change
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, [location.pathname]);
+  
+  // Signal to prerender.io when the app is fully loaded
+  useEffect(() => {
+    // Optimize for prerender.io
+    const signalPrerenderReady = () => {
+      if (typeof window.prerenderReady !== 'undefined') {
+        console.log('App is fully loaded, signaling prerender.io');
+        window.prerenderReady = true;
+      }
+    };
+    
+    // Signal after a short delay to ensure content is loaded
+    const timer = setTimeout(signalPrerenderReady, 1000);
+    
+    // Also signal on route changes
+    if (location.pathname) {
+      signalPrerenderReady();
+    }
+    
+    return () => clearTimeout(timer);
   }, [location.pathname]);
 
   return (

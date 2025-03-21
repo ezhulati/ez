@@ -14,35 +14,74 @@ export default async function handler(req: Request, context: Context) {
   const url = new URL(req.url);
   const hasEscapedFragment = url.searchParams.has('_escaped_fragment_');
   
+  // Check if this is prerender.io itself making the request
+  const isPrerenderRecursive = userAgent.includes('prerender');
+  
   // Log the bot detection
   console.log(`Request URL: ${req.url}`);
   console.log(`User Agent: ${userAgent}`);
   console.log(`Is bot: ${isBot}`);
   console.log(`Has escaped fragment: ${hasEscapedFragment}`);
+  console.log(`Is prerender recursive: ${isPrerenderRecursive}`);
   
-  // If this is a bot, set a response header that our edge function can use
-  if (isBot || hasEscapedFragment) {
+  // Skip prerendering if this is prerender.io itself to avoid recursion
+  if (isPrerenderRecursive) {
+    console.log("Prerender recursive request detected, passing through");
+    return context.next();
+  }
+  
+  // If this is a bot, forward to prerender.io
+  if ((isBot || hasEscapedFragment) && !isPrerenderRecursive) {
     // For bots, forward the request to prerender.io
     console.log("Bot detected, forwarding to prerender.io");
     
-    // Build the prerender URL
-    const prerenderUrl = `https://service.prerender.io/${url.toString()}`;
+    // Make sure the URL is properly formed for prerender.io
+    // Use the canonical URL to avoid URL encoding issues
+    const canonicalUrl = `https://enrizhulati.com${url.pathname}${url.search}`;
     
-    // Add the Prerender token to the request
-    const headers = new Headers(req.headers);
+    // Build the prerender URL with a timeout parameter to avoid excessive render times
+    const prerenderUrl = `https://service.prerender.io/${canonicalUrl}`;
+    console.log("Prerender URL:", prerenderUrl);
+    
+    // Add the Prerender token and extra headers to the request
+    const headers = new Headers();
     headers.set('X-Prerender-Token', 'DXHxiXW4lVGsLvOASJvj');
     
-    // Fetch from prerender.io
+    // Important headers that should be forwarded
+    const forwardHeaders = ['user-agent', 'accept-language', 'accept-encoding', 'accept'];
+    forwardHeaders.forEach(name => {
+      const value = req.headers.get(name);
+      if (value) headers.set(name, value);
+    });
+    
+    // Optimize for fastest possible render
+    headers.set('X-Prerender-Rendertype', 'html');
+    headers.set('X-Prerender-Version', '3');
+    
+    // Fetch from prerender.io with a timeout
     try {
+      const controller = new AbortController();
+      // Set a timeout of 8 seconds to avoid long waiting times
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      
       const prerenderResponse = await fetch(prerenderUrl, {
         headers: headers,
         method: req.method,
         redirect: 'follow',
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      
+      if (!prerenderResponse.ok) {
+        console.error(`Prerender service returned status: ${prerenderResponse.status}`);
+        return context.next();
+      }
       
       // Create a new response with prerendered content
       const responseHeaders = new Headers(prerenderResponse.headers);
       responseHeaders.set('X-Prerendered', 'true');
+      responseHeaders.set('X-Prerender-Status', prerenderResponse.status.toString());
       
       return new Response(await prerenderResponse.text(), {
         status: prerenderResponse.status,

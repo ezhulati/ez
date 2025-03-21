@@ -35,6 +35,16 @@
 [build.processing.images]
   compress = true
 
+# Increase timeouts for edge functions to handle prerender.io
+[functions]
+  node_bundler = "esbuild"
+  
+[functions.edge]
+  # Increase edge function timeouts to prevent timeout issues with prerender
+  external_node_modules = ["@netlify/edge-functions"]
+  # Increase the timeout to 10 seconds
+  included_files = ["netlify/edge-functions/*"]
+
 # Prerender middleware that runs before other edge functions
 [[edge_functions]]
   path = "/*"
@@ -66,6 +76,27 @@
     Cache-Control = "public, max-age=60, s-maxage=300"
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
+
+# Optimize prerendering by caching common static assets
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [dev]
   framework = "vite"
