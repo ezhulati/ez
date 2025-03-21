@@ -223,12 +223,17 @@ function extractMetadata(html: string): {
 
 // Helper function to clean HTML of existing OG and Twitter tags and add new metadata
 function cleanAndAddMetadata(html: string, metaTags: string): string {
+  console.log("Original HTML head meta tags:", html.match(/<meta[^>]*>/gi));
+  
   // First, remove all existing Open Graph and Twitter tags
   let cleanedHtml = html.replace(/<meta\s+property="og:[^>]*>/gi, '');
   cleanedHtml = cleanedHtml.replace(/<meta\s+name="twitter:[^>]*>/gi, '');
   
-  // Also remove existing meta description tags
-  cleanedHtml = cleanedHtml.replace(/<meta\s+name="description"[^>]*>/gi, '');
+  // More aggressive approach to remove meta description tags
+  cleanedHtml = cleanedHtml.replace(/<meta\s+name=["']description["'][^>]*>/gi, '');
+  
+  console.log("Cleaned HTML - removed meta tags:", cleanedHtml.match(/<meta[^>]*>/gi));
+  console.log("Adding new meta tags:", metaTags);
   
   // Now add our new meta tags right after the head opening tag
   return cleanedHtml.replace(
@@ -257,8 +262,10 @@ function getToolImage(url: string): string {
 
 // Main edge function handler
 export default async function handler(req: Request, context: Context) {
-  // Force our handler to run for all requests, not just social bots during development/testing
-  // You can remove this line in production if you only want this to affect social bots
+  console.log("Processing request for URL:", req.url);
+  
+  // Force our handler to run for all requests, not just social bots
+  // This is needed during development to make sure the meta tags are updated
   const forceMeta = true;
 
   const url = req.url;
@@ -272,15 +279,23 @@ export default async function handler(req: Request, context: Context) {
     console.log(`Social media bot detected: ${userAgent}`);
   }
   
+  // Always process all requests - we're forcing this for development
+  console.log("Processing request:", { url, forceMeta, isSocialBot });
+
   // Process blog posts
   if (isBlogPostUrl(url)) {
+    console.log("Blog post URL detected:", url);
     const slug = getSlugFromUrl(url);
+    console.log("Blog slug:", slug);
     const post = await getBlogPost(slug);
     
     // If post not found, continue to the next function
     if (!post) {
+      console.log("Blog post not found for slug:", slug);
       return context.next();
     }
+    
+    console.log("Blog post found:", post.fields.title);
     
     // Get the original response
     const response = await context.next();
@@ -292,6 +307,12 @@ export default async function handler(req: Request, context: Context) {
       : post.fields.image?.fields?.file?.url 
         ? `https:${post.fields.image.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
         : "https://enrizhulati.com/images/blog-social-image.jpg";
+    
+    console.log("Using image URL:", imageUrl);
+    console.log("Blog post meta:", {
+      title: post.fields.metaTitle || post.fields.title,
+      description: post.fields.metaDescription || post.fields.excerpt || ''
+    });
     
     // Create metadata tags
     const metaTags = `
@@ -326,13 +347,10 @@ export default async function handler(req: Request, context: Context) {
     // Set better cache headers to ensure crawlers get fresh content
     const responseHeaders = new Headers(response.headers);
     
-    // Don't cache for social bots
-    if (isSocialBot || forceMeta) {
-      responseHeaders.set('Cache-Control', 'no-store, max-age=0');
-    } else {
-      // Cache for regular visitors but revalidate
-      responseHeaders.set('Cache-Control', 'public, max-age=60, s-maxage=300');
-    }
+    // Never cache these responses to ensure fresh content
+    responseHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    responseHeaders.set('Pragma', 'no-cache');
+    responseHeaders.set('Expires', '0');
     
     // Use our clean method to replace all existing meta tags and add new ones
     const updatedHtml = cleanAndAddMetadata(html, metaTags);
@@ -343,115 +361,31 @@ export default async function handler(req: Request, context: Context) {
     });
   }
   
-  // For pages other than blog posts, only proceed if it's a social bot or we're testing
-  if (isSocialBot || forceMeta) {
-    // Get the original response
-    const response = await context.next();
-    const html = await response.text();
-    
-    // Extract existing metadata from the HTML
-    const metadata = extractMetadata(html);
-    
-    // Process main tools page
-    if (isMainToolsPageUrl(url)) {
-      // For tools main page, prioritize page-specific metadata
-      // Only fall back to defaults if we can't find page-specific data
-      const title = metadata.ogTitle || metadata.title;
-      const description = metadata.ogDescription || metadata.description;
-      const ogImage = metadata.ogImage || "https://enrizhulati.com/images/tools-collection-preview.jpg";
-      
-      // Set better cache headers to ensure crawlers get fresh content
-      const responseHeaders = new Headers(response.headers);
-      responseHeaders.set('Cache-Control', 'no-store, max-age=0');
-      
-      // Special meta tags version that ensures visibility in social shares
-      const metaTags = `
-        <!-- Open Graph / Facebook - Enhanced for Social Sharing -->
-        <meta name="description" content="${description}">
-        <meta property="og:type" content="website">
-        <meta property="og:url" content="${url}">
-        <meta property="og:title" content="${title}">
-        <meta property="og:description" content="${description}">
-        <meta property="og:image" content="${ogImage}">
-        <meta property="og:image:width" content="1200">
-        <meta property="og:image:height" content="630">
-        <meta property="og:site_name" content="Enri Zhulati">
-        
-        <!-- Twitter -->
-        <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:url" content="${url}">
-        <meta name="twitter:title" content="${title}">
-        <meta name="twitter:description" content="${description}">
-        <meta name="twitter:image" content="${ogImage}">
-        <meta name="twitter:site" content="@enrizhulati">
-        <meta name="twitter:creator" content="@enrizhulati">
-      `;
-      
-      // Use our clean method to replace all existing meta tags and add new ones
-      const updatedHtml = cleanAndAddMetadata(html, metaTags);
-      
-      // Return the modified HTML with updated headers
-      return new Response(updatedHtml, {
-        headers: responseHeaders,
-      });
-    }
-    
-    // Process specific tool pages
-    if (isSpecificToolPageUrl(url)) {
-      // For specific tool pages, always use the page's own metadata first
-      // Only fall back to defaults if needed
-      const title = metadata.ogTitle || metadata.title;
-      const description = metadata.ogDescription || metadata.description;
-      
-      // Use the page's own image if available, or fall back to tool-specific image
-      const ogImage = metadata.ogImage || getToolImage(url);
-      
-      // Set better cache headers to ensure crawlers get fresh content
-      const responseHeaders = new Headers(response.headers);
-      responseHeaders.set('Cache-Control', 'no-store, max-age=0');
-      
-      // Special meta tags version that ensures visibility in social shares
-      const metaTags = `
-        <!-- Open Graph / Facebook - Enhanced for Social Sharing -->
-        <meta name="description" content="${description}">
-        <meta property="og:type" content="website">
-        <meta property="og:url" content="${url}">
-        <meta property="og:title" content="${title}">
-        <meta property="og:description" content="${description}">
-        <meta property="og:image" content="${ogImage}">
-        <meta property="og:image:width" content="1200">
-        <meta property="og:image:height" content="630">
-        <meta property="og:site_name" content="Enri Zhulati">
-        
-        <!-- Twitter -->
-        <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:url" content="${url}">
-        <meta name="twitter:title" content="${title}">
-        <meta name="twitter:description" content="${description}">
-        <meta name="twitter:image" content="${ogImage}">
-        <meta name="twitter:site" content="@enrizhulati">
-        <meta name="twitter:creator" content="@enrizhulati">
-      `;
-      
-      // Use our clean method to replace all existing meta tags and add new ones
-      const updatedHtml = cleanAndAddMetadata(html, metaTags);
-      
-      // Return the modified HTML with updated headers
-      return new Response(updatedHtml, {
-        headers: responseHeaders,
-      });
-    }
-    
-    // For any other pages (like homepage, etc.)
+  // For all other pages, we'll also process them
+  // Get the original response
+  const response = await context.next();
+  const html = await response.text();
+  
+  // Extract existing metadata from the HTML
+  const metadata = extractMetadata(html);
+  console.log("Extracted metadata:", metadata);
+  
+  // Process main tools page
+  if (isMainToolsPageUrl(url)) {
+    console.log("Main tools page detected");
+    // For tools main page, prioritize page-specific metadata
+    // Only fall back to defaults if we can't find page-specific data
     const title = metadata.ogTitle || metadata.title;
     const description = metadata.ogDescription || metadata.description;
+    const ogImage = metadata.ogImage || "https://enrizhulati.com/images/tools-collection-preview.jpg";
     
-    // Default to the page's own image or fallback to homepage image
-    const ogImage = metadata.ogImage || metadata.twitterImage || "https://enrizhulati.com/images/homepage-preview.jpg";
+    console.log("Tools page meta:", { title, description, ogImage });
     
     // Set better cache headers to ensure crawlers get fresh content
     const responseHeaders = new Headers(response.headers);
-    responseHeaders.set('Cache-Control', 'no-store, max-age=0');
+    responseHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    responseHeaders.set('Pragma', 'no-cache');
+    responseHeaders.set('Expires', '0');
     
     // Special meta tags version that ensures visibility in social shares
     const metaTags = `
@@ -485,6 +419,101 @@ export default async function handler(req: Request, context: Context) {
     });
   }
   
-  // For all other URLs or if not a social bot, just continue
-  return context.next();
+  // Process specific tool pages
+  if (isSpecificToolPageUrl(url)) {
+    console.log("Specific tool page detected:", url);
+    // For specific tool pages, always use the page's own metadata first
+    // Only fall back to defaults if needed
+    const title = metadata.ogTitle || metadata.title;
+    const description = metadata.ogDescription || metadata.description;
+    
+    // Use the page's own image if available, or fall back to tool-specific image
+    const ogImage = metadata.ogImage || getToolImage(url);
+    
+    console.log("Tool page meta:", { title, description, ogImage });
+    
+    // Set better cache headers to ensure crawlers get fresh content
+    const responseHeaders = new Headers(response.headers);
+    responseHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    responseHeaders.set('Pragma', 'no-cache');
+    responseHeaders.set('Expires', '0');
+    
+    // Special meta tags version that ensures visibility in social shares
+    const metaTags = `
+      <!-- Open Graph / Facebook - Enhanced for Social Sharing -->
+      <meta name="description" content="${description}">
+      <meta property="og:type" content="website">
+      <meta property="og:url" content="${url}">
+      <meta property="og:title" content="${title}">
+      <meta property="og:description" content="${description}">
+      <meta property="og:image" content="${ogImage}">
+      <meta property="og:image:width" content="1200">
+      <meta property="og:image:height" content="630">
+      <meta property="og:site_name" content="Enri Zhulati">
+      
+      <!-- Twitter -->
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:url" content="${url}">
+      <meta name="twitter:title" content="${title}">
+      <meta name="twitter:description" content="${description}">
+      <meta name="twitter:image" content="${ogImage}">
+      <meta name="twitter:site" content="@enrizhulati">
+      <meta name="twitter:creator" content="@enrizhulati">
+    `;
+    
+    // Use our clean method to replace all existing meta tags and add new ones
+    const updatedHtml = cleanAndAddMetadata(html, metaTags);
+    
+    // Return the modified HTML with updated headers
+    return new Response(updatedHtml, {
+      headers: responseHeaders,
+    });
+  }
+  
+  // For any other pages (like homepage, etc.)
+  console.log("Other page detected:", url);
+  const title = metadata.ogTitle || metadata.title;
+  const description = metadata.ogDescription || metadata.description;
+  
+  // Default to the page's own image or fallback to homepage image
+  const ogImage = metadata.ogImage || metadata.twitterImage || "https://enrizhulati.com/images/homepage-preview.jpg";
+  
+  console.log("Page meta:", { title, description, ogImage });
+  
+  // Set better cache headers to ensure crawlers get fresh content
+  const responseHeaders = new Headers(response.headers);
+  responseHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  responseHeaders.set('Pragma', 'no-cache');
+  responseHeaders.set('Expires', '0');
+  
+  // Special meta tags version that ensures visibility in social shares
+  const metaTags = `
+    <!-- Open Graph / Facebook - Enhanced for Social Sharing -->
+    <meta name="description" content="${description}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="${url}">
+    <meta property="og:title" content="${title}">
+    <meta property="og:description" content="${description}">
+    <meta property="og:image" content="${ogImage}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Enri Zhulati">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="${url}">
+    <meta name="twitter:title" content="${title}">
+    <meta name="twitter:description" content="${description}">
+    <meta name="twitter:image" content="${ogImage}">
+    <meta name="twitter:site" content="@enrizhulati">
+    <meta name="twitter:creator" content="@enrizhulati">
+  `;
+  
+  // Use our clean method to replace all existing meta tags and add new ones
+  const updatedHtml = cleanAndAddMetadata(html, metaTags);
+  
+  // Return the modified HTML with updated headers
+  return new Response(updatedHtml, {
+    headers: responseHeaders,
+  });
 } 
