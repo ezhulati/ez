@@ -25,6 +25,17 @@ const BlogList = () => {
         // Add debug information
         setDebugInfo('Fetching posts...');
         console.log('Fetching blog posts...');
+        console.log('Contentful credentials:', {
+          spaceId: import.meta.env.VITE_CONTENTFUL_SPACE_ID ? 'Found' : 'Missing',
+          accessToken: import.meta.env.VITE_CONTENTFUL_ACCESS_TOKEN ? 'Found' : 'Missing'
+        });
+        
+        // Check if credentials exist before attempting fetch
+        if (!import.meta.env.VITE_CONTENTFUL_SPACE_ID || !import.meta.env.VITE_CONTENTFUL_ACCESS_TOKEN) {
+          setError('Blog temporarily unavailable. Please check back later.');
+          setDebugInfo(prev => prev + '\nContentful credentials missing. Check .env file.');
+          return;
+        }
         
         const fetchedPosts = await getBlogPosts();
         console.log('Fetched posts:', fetchedPosts);
@@ -80,10 +91,10 @@ const BlogList = () => {
   if (error) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
-        <div className="text-center p-8 max-w-md">
+        <div className="text-center p-8 max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-md">
           <div className="text-red-500 text-5xl mb-4">😕</div>
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-            Something went wrong
+            Blog temporarily unavailable
           </h3>
           <p className="text-gray-600 dark:text-gray-300 mb-4">
             {error}
@@ -91,12 +102,20 @@ const BlogList = () => {
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 text-left whitespace-pre-wrap">
             {debugInfo}
           </p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-          >
-            Try again
-          </button>
+          <div className="flex justify-center gap-3">
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Try again
+            </button>
+            <a 
+              href="/"
+              className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
+            >
+              Return home
+            </a>
+          </div>
         </div>
       </div>
     );
