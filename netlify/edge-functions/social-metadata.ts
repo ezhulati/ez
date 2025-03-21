@@ -137,10 +137,23 @@ function isBlogPostUrl(url: string): boolean {
   return pathname.startsWith('/blog/') && pathname.split('/').length > 2;
 }
 
-// Check if URL is a tools page URL
-function isToolsPageUrl(url: string): boolean {
+// Check if URL is the main tools page URL
+function isMainToolsPageUrl(url: string): boolean {
   const pathname = new URL(url).pathname;
-  return pathname === '/tools' || pathname.startsWith('/tools/');
+  return pathname === '/tools';
+}
+
+// Check if URL is a specific tool page
+function isSpecificToolPageUrl(url: string): boolean {
+  const pathname = new URL(url).pathname;
+  return pathname.startsWith('/tools/') && pathname.split('/').length > 2;
+}
+
+// Get tool slug from URL
+function getToolSlugFromUrl(url: string): string {
+  const pathname = new URL(url).pathname;
+  const parts = pathname.split('/');
+  return parts[parts.length - 1];
 }
 
 // Extract slug from URL
@@ -148,6 +161,23 @@ function getSlugFromUrl(url: string): string {
   const pathname = new URL(url).pathname;
   const parts = pathname.split('/');
   return parts[parts.length - 1];
+}
+
+// Get specific image for a tool page
+function getToolImage(url: string): string {
+  const pathname = new URL(url).pathname;
+  
+  // Check for specific tool pages
+  if (pathname.includes('seo-roi-calculator')) {
+    return "https://enrizhulati.com/images/seo-roi-calculator-preview.jpg";
+  } else if (pathname.includes('website-speed-impact-calculator') || pathname.includes('speed-roi-calculator')) {
+    return "https://enrizhulati.com/images/speed-roi-calculator-preview.jpg";
+  } else if (pathname.includes('conversion-rate-calculator')) {
+    return "https://enrizhulati.com/images/conversion-rate-calculator-preview.jpg";
+  }
+  
+  // Default tools image
+  return "https://enrizhulati.com/images/tools-collection-preview.jpg";
 }
 
 // Main edge function handler
@@ -237,14 +267,11 @@ export default async function handler(req: Request, context: Context) {
     });
   }
   
-  // Process tools pages
-  if (isToolsPageUrl(url)) {
+  // Process main tools page
+  if (isMainToolsPageUrl(url)) {
     // Get the original response
     const response = await context.next();
     const html = await response.text();
-    
-    // We don't need to fetch from Contentful for tools - the metadata is static in the page
-    // Just ensure it's properly included for social bots
     
     // Extract existing meta tags from the HTML
     const titleMatch = html.match(/<title>(.*?)<\/title>/i);
@@ -253,11 +280,67 @@ export default async function handler(req: Request, context: Context) {
     const descMatch = html.match(/<meta\s+name="description"\s+content="(.*?)"/i);
     const description = descMatch ? descMatch[1] : 'Boost your online performance with marketing calculators and SEO tools.';
     
-    const ogImageMatch = html.match(/<meta\s+property="og:image"\s+content="(.*?)"/i);
-    const ogImage = ogImageMatch ? ogImageMatch[1] : 'https://enrizhulati.com/images/tools-collection-preview.jpg';
+    const ogImage = "https://enrizhulati.com/images/tools-collection-preview.jpg";
     
     // Only modify if we're a social bot - regular page rendering should work fine normally
-    if (isSocialBot) {
+    if (true || isSocialBot) { // Always apply for testing
+      // Set better cache headers to ensure crawlers get fresh content
+      const responseHeaders = new Headers(response.headers);
+      responseHeaders.set('Cache-Control', 'no-store, max-age=0');
+      
+      // Special meta tags version that ensures visibility in social shares
+      const metaTags = `
+        <!-- Open Graph / Facebook - Enhanced for Social Sharing -->
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="${url}">
+        <meta property="og:title" content="${title}">
+        <meta property="og:description" content="${description}">
+        <meta property="og:image" content="${ogImage}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+        <meta property="og:site_name" content="Enri Zhulati">
+        
+        <!-- Twitter -->
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:url" content="${url}">
+        <meta name="twitter:title" content="${title}">
+        <meta name="twitter:description" content="${description}">
+        <meta name="twitter:image" content="${ogImage}">
+        <meta name="twitter:site" content="@enrizhulati">
+        <meta name="twitter:creator" content="@enrizhulati">
+      `;
+      
+      // Approach 2: Safer method that adds our critical tags at the top of head
+      const updatedHtml = html.replace(
+        '<head>',
+        `<head>\n${metaTags}\n`
+      );
+      
+      // Return the modified HTML with updated headers
+      return new Response(updatedHtml, {
+        headers: responseHeaders,
+      });
+    }
+  }
+  
+  // Process specific tool pages
+  if (isSpecificToolPageUrl(url)) {
+    // Get the original response
+    const response = await context.next();
+    const html = await response.text();
+    
+    // Extract existing meta tags from the HTML
+    const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+    const title = titleMatch ? titleMatch[1] : 'Marketing Tool';
+    
+    const descMatch = html.match(/<meta\s+name="description"\s+content="(.*?)"/i);
+    const description = descMatch ? descMatch[1] : 'Free online marketing calculator to optimize your business performance.';
+    
+    // Get the appropriate image for this specific tool
+    const ogImage = getToolImage(url);
+    
+    // Only modify if we're a social bot - regular page rendering should work fine normally
+    if (true || isSocialBot) { // Always apply for testing
       // Set better cache headers to ensure crawlers get fresh content
       const responseHeaders = new Headers(response.headers);
       responseHeaders.set('Cache-Control', 'no-store, max-age=0');
