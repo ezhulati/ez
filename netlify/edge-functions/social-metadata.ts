@@ -292,31 +292,46 @@ function extractMetadata(html: string): {
   return defaults;
 }
 
-// Helper function to clean HTML of existing meta tags and add new metadata
-function cleanAndAddMetadata(html: string, metaTags: string): string {
-  // More targeted approach to remove meta tags
-  let updatedHtml = html;
+// Helper function to clean and prepare meta values
+const cleanMetaValue = (value: string | null | undefined): string => {
+  if (!value) return '';
   
-  // First, remove all existing keywords meta tags
-  updatedHtml = updatedHtml.replace(/<meta\s+name=["']keywords["'][^>]*>/gi, '');
+  // Convert to string, trim whitespace
+  let cleaned = String(value).trim();
   
-  // Then remove other meta tags we'll be replacing
-  updatedHtml = updatedHtml.replace(/<meta\s+name=["']description["'][^>]*>/gi, '');
-  updatedHtml = updatedHtml.replace(/<meta\s+property=["']og:[^"']*["'][^>]*>/gi, '');
-  updatedHtml = updatedHtml.replace(/<meta\s+name=["']twitter:[^"']*["'][^>]*>/gi, '');
+  // Replace any HTML entities with their plain text equivalents
+  cleaned = cleaned.replace(/&amp;/g, '&')
+                   .replace(/&lt;/g, '<')
+                   .replace(/&gt;/g, '>')
+                   .replace(/&quot;/g, '"')
+                   .replace(/&#039;/g, "'")
+                   .replace(/&#39;/g, "'");
   
-  // Remove canonical links
-  updatedHtml = updatedHtml.replace(/<link\s+rel=["']canonical["'][^>]*>/gi, '');
+  // Remove any HTML tags
+  cleaned = cleaned.replace(/<[^>]*>/g, '');
   
-  // Find the position to insert our meta tags
-  const headEndPos = updatedHtml.indexOf('</head>');
-  if (headEndPos !== -1) {
-    // Insert the meta tags just before </head>
-    updatedHtml = updatedHtml.slice(0, headEndPos) + metaTags + updatedHtml.slice(headEndPos);
+  // Normalize whitespace
+  cleaned = cleaned.replace(/\s+/g, ' ');
+  
+  // Truncate if too long (meta descriptions should be under 160 characters)
+  if (cleaned.length > 300) {
+    cleaned = cleaned.substring(0, 297) + '...';
   }
   
-  return updatedHtml;
-}
+  return cleaned;
+};
+
+// Helper function to create properly formatted meta tags
+const createMetaTag = (name: string, content: string, isProp = false): string => {
+  // Convert content to a JS string literal which handles escaping correctly
+  const safeContent = JSON.stringify(content);
+  
+  // Remove the surrounding quotes from the stringified value
+  const escapedContent = safeContent.substring(1, safeContent.length - 1);
+  
+  const attrType = isProp ? 'property' : 'name';
+  return `<meta ${attrType}="${name}" content="${escapedContent}">`;
+};
 
 // Get specific image for a tool page based on the tool URL
 function getToolImage(url: string): string {
@@ -423,27 +438,6 @@ export default async function handler(req: Request, context: Context) {
   const requestUrl = new URL(url);
   const canonicalUrl = `https://enrizhulati.com${requestUrl.pathname}`;
   
-  // Helper function to clean and prepare meta values
-  const cleanMetaValue = (value: string | null | undefined): string => {
-    if (!value) return '';
-    
-    // Convert to string, trim whitespace
-    let cleaned = String(value).trim();
-    
-    // Remove any HTML tags
-    cleaned = cleaned.replace(/<[^>]*>/g, '');
-    
-    // Normalize whitespace
-    cleaned = cleaned.replace(/\s+/g, ' ');
-    
-    // Truncate if too long (meta descriptions should be under 160 characters)
-    if (cleaned.length > 300) {
-      cleaned = cleaned.substring(0, 297) + '...';
-    }
-    
-    return cleaned;
-  };
-  
   // Get user agent for bot detection
   const userAgent = req.headers.get('User-Agent') || '';
   console.log("User-Agent:", userAgent);
@@ -534,51 +528,34 @@ export default async function handler(req: Request, context: Context) {
       console.log("- Description: ", cleanDescription);
       console.log("- Keywords: ", cleanKeywords);
       
-      // Escape the content more robustly
-      const escapeHtml = (str: string) => {
-        if (!str) return '';
-        // Convert to string if not already
-        const stringValue = String(str);
-        return stringValue
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#039;');
-      };
-      
-      const safeTitle = escapeHtml(cleanTitle);
-      const safeDescription = escapeHtml(cleanDescription);
-      const safeKeywords = escapeHtml(cleanKeywords);
-      
       // Image URL
       const imageUrl = blogPost?.fields.featuredImage?.fields?.file?.url 
         ? `https:${blogPost.fields.featuredImage.fields.file.url}?fm=webp&w=1200&h=630&fit=fill` 
         : addTimestampToImageUrl("https://enrizhulati.com/images/blog-social-image.jpg");
         
-      // Create our meta tags string
+      // Create our meta tags using the specialized function
       metaTags = `
       <!-- START: Injected SEO Meta Tags -->
-      <meta name="description" content="${safeDescription}">
-      <meta name="keywords" content="${safeKeywords}">
+      ${createMetaTag('description', cleanDescription)}
+      ${createMetaTag('keywords', cleanKeywords)}
       <link rel="canonical" href="${canonicalUrl}">
       
       <!-- Open Graph / Facebook -->
-      <meta property="og:type" content="article">
-      <meta property="og:url" content="${canonicalUrl}">
-      <meta property="og:site_name" content="Enri Zhulati">
-      <meta property="og:title" content="${safeTitle}">
-      <meta property="og:description" content="${safeDescription}">
-      <meta property="og:image" content="${imageUrl}">
-      <meta property="article:published_time" content="${blogPost?.fields.articlePublishDate || blogPost?.fields.publishedDate || '2023-07-15T08:00:00+00:00'}">
-      <meta property="article:author" content="https://enrizhulati.com">
+      ${createMetaTag('og:type', 'article', true)}
+      ${createMetaTag('og:url', canonicalUrl, true)}
+      ${createMetaTag('og:site_name', 'Enri Zhulati', true)}
+      ${createMetaTag('og:title', cleanTitle, true)}
+      ${createMetaTag('og:description', cleanDescription, true)}
+      ${createMetaTag('og:image', imageUrl, true)}
+      ${createMetaTag('article:published_time', blogPost?.fields.articlePublishDate || blogPost?.fields.publishedDate || '2023-07-15T08:00:00+00:00', true)}
+      ${createMetaTag('article:author', 'https://enrizhulati.com', true)}
       
       <!-- Twitter -->
-      <meta name="twitter:card" content="${blogPost?.fields.twitterCardType || 'summary_large_image'}">
-      <meta name="twitter:site" content="@enrizhulati">
-      <meta name="twitter:title" content="${safeTitle}">
-      <meta name="twitter:description" content="${safeDescription}">
-      <meta name="twitter:image" content="${imageUrl}">
+      ${createMetaTag('twitter:card', blogPost?.fields.twitterCardType || 'summary_large_image')}
+      ${createMetaTag('twitter:site', '@enrizhulati')}
+      ${createMetaTag('twitter:title', cleanTitle)}
+      ${createMetaTag('twitter:description', cleanDescription)}
+      ${createMetaTag('twitter:image', imageUrl)}
       
       <!-- Structured data for BlogPosting -->
       <script type="application/ld+json">
@@ -589,8 +566,8 @@ export default async function handler(req: Request, context: Context) {
           "@type": "WebPage",
           "@id": "${canonicalUrl}"
         },
-        "headline": "${safeTitle}",
-        "description": "${safeDescription}",
+        "headline": ${JSON.stringify(cleanTitle)},
+        "description": ${JSON.stringify(cleanDescription)},
         "image": "${imageUrl}",
         "author": {
           "@type": "Person",
@@ -605,7 +582,7 @@ export default async function handler(req: Request, context: Context) {
             "url": "https://enrizhulati.com/images/logo.png"
           }
         },
-        "keywords": "${safeKeywords}",
+        "keywords": ${JSON.stringify(cleanKeywords)},
         "datePublished": "${blogPost?.fields.articlePublishDate || blogPost?.fields.publishedDate || '2023-07-15T08:00:00+00:00'}",
         "dateModified": "${blogPost?.fields.articleModifiedDate || blogPost?.sys.updatedAt || '2023-08-30T10:00:00+00:00'}"
       }
@@ -712,34 +689,34 @@ export default async function handler(req: Request, context: Context) {
       // Create meta tags for other page types
       metaTags = `
       <!-- START: Injected SEO Meta Tags -->
-      <meta name="description" content="${safeDescription}">
-      <meta name="keywords" content="${safeKeywords}">
+      ${createMetaTag('description', cleanDescription)}
+      ${createMetaTag('keywords', cleanKeywords)}
       <link rel="canonical" href="${canonicalUrl}">
       
       <!-- Open Graph / Facebook -->
-      <meta property="og:type" content="${isSpecificToolPageUrl(url) ? 'website' : 'website'}">
-      <meta property="og:url" content="${canonicalUrl}">
-      <meta property="og:site_name" content="Enri Zhulati">
-      <meta property="og:title" content="${safeTitle}">
-      <meta property="og:description" content="${safeDescription}">
-      <meta property="og:image" content="${imageUrl}">
+      ${createMetaTag('og:type', isSpecificToolPageUrl(url) ? 'website' : 'website', true)}
+      ${createMetaTag('og:url', canonicalUrl, true)}
+      ${createMetaTag('og:site_name', 'Enri Zhulati', true)}
+      ${createMetaTag('og:title', cleanTitle, true)}
+      ${createMetaTag('og:description', cleanDescription, true)}
+      ${createMetaTag('og:image', imageUrl, true)}
       
       <!-- Twitter -->
-      <meta name="twitter:card" content="summary_large_image">
-      <meta name="twitter:site" content="@enrizhulati">
-      <meta name="twitter:creator" content="@enrizhulati">
-      <meta name="twitter:url" content="${canonicalUrl}">
-      <meta name="twitter:title" content="${safeTitle}">
-      <meta name="twitter:description" content="${safeDescription}">
-      <meta name="twitter:image" content="${imageUrl}">
+      ${createMetaTag('twitter:card', 'summary_large_image')}
+      ${createMetaTag('twitter:site', '@enrizhulati')}
+      ${createMetaTag('twitter:creator', '@enrizhulati')}
+      ${createMetaTag('twitter:url', canonicalUrl)}
+      ${createMetaTag('twitter:title', cleanTitle)}
+      ${createMetaTag('twitter:description', cleanDescription)}
+      ${createMetaTag('twitter:image', imageUrl)}
       
       <!-- Structured data for WebPage -->
       <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "${isSpecificToolPageUrl(url) ? 'SoftwareApplication' : 'WebPage'}",
-        "name": "${safeTitle}",
-        "description": "${safeDescription}",
+        "name": ${JSON.stringify(cleanTitle)},
+        "description": ${JSON.stringify(cleanDescription)},
         "url": "${canonicalUrl}",
         "image": "${imageUrl}",
         ${isSpecificToolPageUrl(url) ? `
