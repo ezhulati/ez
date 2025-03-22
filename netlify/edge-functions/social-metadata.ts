@@ -423,6 +423,27 @@ export default async function handler(req: Request, context: Context) {
   const requestUrl = new URL(url);
   const canonicalUrl = `https://enrizhulati.com${requestUrl.pathname}`;
   
+  // Helper function to clean and prepare meta values
+  const cleanMetaValue = (value: string | null | undefined): string => {
+    if (!value) return '';
+    
+    // Convert to string, trim whitespace
+    let cleaned = String(value).trim();
+    
+    // Remove any HTML tags
+    cleaned = cleaned.replace(/<[^>]*>/g, '');
+    
+    // Normalize whitespace
+    cleaned = cleaned.replace(/\s+/g, ' ');
+    
+    // Truncate if too long (meta descriptions should be under 160 characters)
+    if (cleaned.length > 300) {
+      cleaned = cleaned.substring(0, 297) + '...';
+    }
+    
+    return cleaned;
+  };
+  
   // Get user agent for bot detection
   const userAgent = req.headers.get('User-Agent') || '';
   console.log("User-Agent:", userAgent);
@@ -493,12 +514,32 @@ export default async function handler(req: Request, context: Context) {
       // Get the data
       const blogPostTitle = blogPost?.fields.metaTitle || blogPost?.fields.title || getHardcodedBlogTitle(slug);
       const blogPostDescription = blogPost?.fields.metaDescription || blogPost?.fields.excerpt || getHardcodedBlogDescription(slug);
-      const blogPostKeywords = blogPost?.fields.seoKeywords?.join(', ') || blogPost?.fields.categories?.join(', ') || "ai content, content creation, content strategy, AI writing, marketing content, SEO content";
       
-      // Escape the content
+      // Get keywords - use array methods more safely with proper null checks
+      let blogPostKeywords = "ai content, content creation, content strategy, AI writing, marketing content, SEO content";
+      
+      if (blogPost?.fields.seoKeywords && Array.isArray(blogPost.fields.seoKeywords) && blogPost.fields.seoKeywords.length > 0) {
+        blogPostKeywords = blogPost.fields.seoKeywords.join(', ');
+      } else if (blogPost?.fields.categories && Array.isArray(blogPost.fields.categories) && blogPost.fields.categories.length > 0) {
+        blogPostKeywords = blogPost.fields.categories.join(', ');
+      }
+
+      // Clean and sanitize all meta values
+      const cleanTitle = cleanMetaValue(blogPostTitle);
+      const cleanDescription = cleanMetaValue(blogPostDescription);
+      const cleanKeywords = cleanMetaValue(blogPostKeywords);
+
+      console.log("Final meta values being used:");
+      console.log("- Title: ", cleanTitle);
+      console.log("- Description: ", cleanDescription);
+      console.log("- Keywords: ", cleanKeywords);
+      
+      // Escape the content more robustly
       const escapeHtml = (str: string) => {
         if (!str) return '';
-        return str
+        // Convert to string if not already
+        const stringValue = String(str);
+        return stringValue
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;')
@@ -506,9 +547,9 @@ export default async function handler(req: Request, context: Context) {
           .replace(/'/g, '&#039;');
       };
       
-      const safeTitle = escapeHtml(blogPostTitle);
-      const safeDescription = escapeHtml(blogPostDescription);
-      const safeKeywords = escapeHtml(blogPostKeywords);
+      const safeTitle = escapeHtml(cleanTitle);
+      const safeDescription = escapeHtml(cleanDescription);
+      const safeKeywords = escapeHtml(cleanKeywords);
       
       // Image URL
       const imageUrl = blogPost?.fields.featuredImage?.fields?.file?.url 
@@ -598,6 +639,33 @@ export default async function handler(req: Request, context: Context) {
         }
       }
       
+      // Clean and sanitize all meta values
+      const cleanTitle = cleanMetaValue(title);
+      const cleanDescription = cleanMetaValue(description);
+      const cleanKeywords = cleanMetaValue(keywords);
+
+      console.log("Non-blog page meta values being used:");
+      console.log("- Title: ", cleanTitle);
+      console.log("- Description: ", cleanDescription);
+      console.log("- Keywords: ", cleanKeywords);
+      
+      // Escape HTML characters for meta tag content more robustly
+      const escapeHtml = (str: string) => {
+        if (!str) return '';
+        // Convert to string if not already
+        const stringValue = String(str);
+        return stringValue
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      };
+
+      const safeTitle = escapeHtml(cleanTitle);
+      const safeDescription = escapeHtml(cleanDescription);
+      const safeKeywords = escapeHtml(cleanKeywords);
+      
       // Handle tool pages
       if (isSpecificToolPageUrl(url)) {
         const toolSlug = getToolSlugFromUrl(url);
@@ -640,21 +708,6 @@ export default async function handler(req: Request, context: Context) {
       } else {
         imageUrl = addTimestampToImageUrl(metadata.ogImage || "https://enrizhulati.com/images/homepage-preview.jpg");
       }
-      
-      // Escape HTML characters for meta tag content
-      const escapeHtml = (str: string) => {
-        if (!str) return '';
-        return str
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#039;');
-      };
-
-      const safeTitle = escapeHtml(title);
-      const safeDescription = escapeHtml(description);
-      const safeKeywords = escapeHtml(keywords);
       
       // Create meta tags for other page types
       metaTags = `
@@ -716,10 +769,6 @@ export default async function handler(req: Request, context: Context) {
       `;
     }
     
-    // Now carefully remove the old meta tags we want to replace
-    // This is a simplified approach - we don't try to parse HTML structure
-    // Just remove whole tag instances based on unique strings
-    
     // Define patterns to find the meta tags we want to remove
     const patternsToRemove = [
       /<meta\s+name=["']keywords["'][^>]*>/gi,
@@ -744,9 +793,28 @@ export default async function handler(req: Request, context: Context) {
       cleanedHeadContent = cleanedHeadContent.replace(pattern, '');
     }
     
-    // Construct a new head tag with our meta tags inserted at the beginning
-    // This ensures they're not buried within other tags in the head
-    const newHeadTag = `<head>${metaTags}${cleanedHeadContent}</head>`;
+    // Add a marker comment to help with debugging
+    const debugMarker = `<!-- META TAGS INJECTED BY NETLIFY EDGE FUNCTION: ${new Date().toISOString()} -->`;
+    
+    // Insert our meta tags after the first meta charset tag if it exists
+    // This ensures proper placement and maintains the charset declaration at the top
+    const charsetMatch = cleanedHeadContent.match(/<meta\s+charset=[^>]*>/i);
+    let newHeadContent;
+    
+    if (charsetMatch) {
+      const charsetTag = charsetMatch[0];
+      const charsetPos = cleanedHeadContent.indexOf(charsetTag) + charsetTag.length;
+      newHeadContent = cleanedHeadContent.slice(0, charsetPos) + 
+                       `\n  ${debugMarker}\n  ` + 
+                       metaTags + 
+                       cleanedHeadContent.slice(charsetPos);
+    } else {
+      // If no charset tag, just put our tags at the start
+      newHeadContent = `${debugMarker}\n` + metaTags + cleanedHeadContent;
+    }
+    
+    // Construct a new head tag with our meta tags
+    const newHeadTag = `<head>${newHeadContent}</head>`;
     
     // Replace the old head tag with our new one
     updatedHtml = html.replace(fullHeadTag, newHeadTag);
