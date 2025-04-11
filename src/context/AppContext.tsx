@@ -48,15 +48,22 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   // Check for reduced motion preference
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   
-  // Initialize dark mode from localStorage
+  // Initialize dark mode from localStorage with validation
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    // Only change from default if explicitly set to light
-    if (savedTheme === 'light') {
-      setIsDarkMode(false);
-      document.documentElement.classList.remove('dark');
-    } else {
-      // Default is dark mode
+    try {
+      const savedTheme = localStorage.getItem('theme');
+      // Only change from default if explicitly set to light and valid
+      if (savedTheme === 'light') {
+        setIsDarkMode(false);
+        document.documentElement.classList.remove('dark');
+      } else {
+        // Default is dark mode
+        setIsDarkMode(true);
+        document.documentElement.classList.add('dark');
+      }
+    } catch (e) {
+      console.error('Error reading theme preference:', e);
+      // Default to dark mode if there's an error
       setIsDarkMode(true);
       document.documentElement.classList.add('dark');
     }
@@ -101,10 +108,18 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       const newMode = !prev;
       if (newMode) {
         document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
+        try {
+          localStorage.setItem('theme', 'dark');
+        } catch (e) {
+          console.error('Error saving theme preference:', e);
+        }
       } else {
         document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
+        try {
+          localStorage.setItem('theme', 'light');
+        } catch (e) {
+          console.error('Error saving theme preference:', e);
+        }
       }
       return newMode;
     });

@@ -249,8 +249,19 @@ const BlogPost = () => {
         
         setPost(fetchedPost);
         
-        // Check if post is bookmarked
-        const bookmarks = JSON.parse(localStorage.getItem('blog-bookmarks') || '[]');
+        // Check if post is bookmarked - with proper validation
+        let bookmarks = [];
+        try {
+          const storedBookmarks = localStorage.getItem('blog-bookmarks');
+          if (storedBookmarks) {
+            const parsed = JSON.parse(storedBookmarks);
+            if (Array.isArray(parsed)) {
+              bookmarks = parsed;
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing bookmarks:', e);
+        }
         setIsBookmarked(bookmarks.includes(slug));
         
       } catch (err: any) {
@@ -284,16 +295,38 @@ const BlogPost = () => {
   }, [isLoading, post]);
   
   const toggleBookmark = () => {
-    const bookmarks = JSON.parse(localStorage.getItem('blog-bookmarks') || '[]');
+    // Safely get bookmarks with validation
+    let bookmarks = [];
+    try {
+      const storedBookmarks = localStorage.getItem('blog-bookmarks');
+      if (storedBookmarks) {
+        const parsed = JSON.parse(storedBookmarks);
+        if (Array.isArray(parsed)) {
+          bookmarks = parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing bookmarks:', e);
+    }
     
     if (isBookmarked) {
       // Remove from bookmarks
       const updatedBookmarks = bookmarks.filter((s: string) => s !== slug);
-      localStorage.setItem('blog-bookmarks', JSON.stringify(updatedBookmarks));
+      try {
+        localStorage.setItem('blog-bookmarks', JSON.stringify(updatedBookmarks));
+      } catch (e) {
+        console.error('Error saving bookmarks:', e);
+      }
     } else {
-      // Add to bookmarks
-      bookmarks.push(slug);
-      localStorage.setItem('blog-bookmarks', JSON.stringify(bookmarks));
+      // Add to bookmarks - with validation to prevent XSS
+      if (typeof slug === 'string' && slug.length < 100) {
+        bookmarks.push(slug);
+        try {
+          localStorage.setItem('blog-bookmarks', JSON.stringify(bookmarks));
+        } catch (e) {
+          console.error('Error saving bookmarks:', e);
+        }
+      }
     }
     
     setIsBookmarked(!isBookmarked);

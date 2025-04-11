@@ -11,6 +11,11 @@ type FormErrors = {
 
 type FormStatus = "idle" | "loading" | "success" | "error";
 
+// Generate a CSRF token
+const generateCSRFToken = () => {
+  return Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+};
+
 export default function ContactForm() {
   // Form state
   const [formData, setFormData] = useState({
@@ -18,8 +23,25 @@ export default function ContactForm() {
     email: "",
     subject: "",
     package: "",
-    message: ""
+    message: "",
+    _csrf: ""
   });
+  
+  // Initialize CSRF token
+  useEffect(() => {
+    const csrfToken = generateCSRFToken();
+    setFormData(prev => ({
+      ...prev,
+      _csrf: csrfToken
+    }));
+    
+    // Store in sessionStorage for verification
+    try {
+      sessionStorage.setItem('csrfToken', csrfToken);
+    } catch (e) {
+      console.error('Error storing CSRF token:', e);
+    }
+  }, []);
 
   // Form validation and submission state
   const [errors, setErrors] = useState<FormErrors>({});
@@ -94,6 +116,9 @@ export default function ContactForm() {
   };
 
   // Form submission handler
+  // Rate limiting for form submissions
+  const [lastSubmissionTime, setLastSubmissionTime] = useState(0);
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitCount(prev => prev + 1);
@@ -101,33 +126,83 @@ export default function ContactForm() {
     const isValid = validateForm();
     if (!isValid) return;
     
+    // Rate limiting check - prevent submissions more than once per 10 seconds
+    const now = Date.now();
+    if (now - lastSubmissionTime < 10000) {
+      setErrors(prev => ({
+        ...prev,
+        message: "Please wait a moment before submitting again"
+      }));
+      return;
+    }
+    
+    setLastSubmissionTime(now);
     setStatus("loading");
 
     try {
-      // Send the form data to Formspree
+      // Verify CSRF token matches
+      let storedToken;
+      try {
+        storedToken = sessionStorage.getItem('csrfToken');
+      } catch (e) {
+        console.error('Error retrieving CSRF token:', e);
+      }
+      
+      if (!storedToken || storedToken !== formData._csrf) {
+        // Generate a new token if verification fails
+        const newToken = generateCSRFToken();
+        setFormData(prev => ({
+          ...prev,
+          _csrf: newToken
+        }));
+        try {
+          sessionStorage.setItem('csrfToken', newToken);
+        } catch (e) {
+          console.error('Error storing new CSRF token:', e);
+        }
+        throw new Error('Security verification failed. Please try again.');
+      }
+      
+      // Send the form data to Formspree with CSRF token
       const response = await fetch("https://formspree.io/f/xanewdzl", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": formData._csrf
+        },
         body: JSON.stringify(formData),
       });
 
       if (response.ok) {
         setStatus("success");
-        setFormData({
+        setFormData(prev => ({
           name: "",
           email: "",
           subject: "",
           package: "",
-          message: ""
-        });
+          message: "",
+          _csrf: prev._csrf // Preserve the CSRF token
+        }));
         setTouched({});
         setSubmitCount(0);
       } else {
         setStatus("error");
       }
     } catch (error) {
-      console.error("Form submission error:", error);
+      console.error("Form submission error:", error instanceof Error ? error.message : "Unknown error");
       setStatus("error");
+      
+      // Generate a new CSRF token after an error
+      const newToken = generateCSRFToken();
+      setFormData(prev => ({
+        ...prev,
+        _csrf: newToken
+      }));
+      try {
+        sessionStorage.setItem('csrfToken', newToken);
+      } catch (e) {
+        console.error('Error storing new CSRF token:', e);
+      }
     }
   };
 
@@ -295,7 +370,7 @@ export default function ContactForm() {
       {status === "error" && (
         <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-4 rounded-lg flex items-center">
           <AlertCircle className="h-5 w-5 mr-2 text-red-500" />
-          <p className="text-sm font-medium">Something went wrong. Try emailing me directly at contact@enrizhulati.com instead.</p>
+          <p className="text-sm font-medium">Something went wrong. Please try again later or use the contact form on my website.</p>
         </div>
       )}
     </form>
