@@ -425,6 +425,7 @@ const HomePage = () => {
                       autoplay
                       mode="normal"
                       renderer="svg"
+                      role="img"
                       aria-label="Animation showing web development concepts"
                       id="homepage-lottie"
                     ></dotlottie-player>
