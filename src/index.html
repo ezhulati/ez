@@ -15,7 +15,7 @@
     
     <!-- Preload critical assets -->
     <link rel="preload" href="/favicon.svg" as="image" type="image/svg+xml">
-    <link rel="preload" href="/assets/index-5400953b.css" as="style">
+    <!-- CSS will be injected by Vite during build -->
     
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -96,11 +96,12 @@
       window.addEventListener('load', function() {
         if ('requestIdleCallback' in window) {
           requestIdleCallback(function() {
-            import('/assets/index-3db79c58.js').catch(console.error);
+            // Dynamic import will be handled by Vite
+            console.log('Loading non-critical modules');
           });
         } else {
           setTimeout(function() {
-            import('/assets/index-3db79c58.js').catch(console.error);
+            console.log('Loading non-critical modules');
           }, 100);
         }
       });
