@@ -94,7 +94,9 @@ console.log('Contentful Config Details:', {
   environment: import.meta.env.VITE_CONTENTFUL_ENVIRONMENT || 'master',
 });
 
-// Fallback to hardcoded values if environment variables aren't available
+// SECURITY WARNING: These fallback values are temporary and should be removed
+// once proper environment variables are set up in Netlify UI
+// TODO: Remove these fallbacks after setting up environment variables in Netlify
 const SPACE_ID = import.meta.env.VITE_CONTENTFUL_SPACE_ID || 'hdo1k8om3hmw';
 const ACCESS_TOKEN = import.meta.env.VITE_CONTENTFUL_ACCESS_TOKEN || 'g29C2epdpHoOQsex08PJXphQYxqVWsN-cUZBbO9QA4A';
 const PREVIEW_TOKEN = import.meta.env.VITE_CONTENTFUL_PREVIEW_TOKEN || '81cfBHWQVwo4pe7ZPisFfvJrzpwCy-AHyBEuf_DA5tQ';

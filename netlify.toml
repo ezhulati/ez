@@ -20,12 +20,12 @@
 # Build hooks - can be triggered by Contentful webhooks
 [build.environment]
   NODE_VERSION = "18.19.0"
-  # Contentful environment variables - temporarily restored until properly set in Netlify UI
-  # TODO: Move these to Netlify UI environment variables for better security
-  VITE_CONTENTFUL_SPACE_ID = "hdo1k8om3hmw"
-  VITE_CONTENTFUL_ACCESS_TOKEN = "g29C2epdpHoOQsex08PJXphQYxqVWsN-cUZBbO9QA4A"
-  VITE_CONTENTFUL_PREVIEW_TOKEN = "81cfBHWQVwo4pe7ZPisFfvJrzpwCy-AHyBEuf_DA5tQ"
-  VITE_CONTENTFUL_ENVIRONMENT = "master"
+  # Contentful environment variables - should be set in Netlify UI environment variables
+  # These are not needed in this file as the client-side code has fallbacks
+  # VITE_CONTENTFUL_SPACE_ID
+  # VITE_CONTENTFUL_ACCESS_TOKEN
+  # VITE_CONTENTFUL_PREVIEW_TOKEN
+  # VITE_CONTENTFUL_ENVIRONMENT
   CONTENTFUL_REBUILD_HOOK = "https://api.netlify.com/build_hooks/67d782602c666be1d13a74e5"
   PRERENDER_TOKEN = "DXHxiXW4lVGsLvOASJvj"
 
