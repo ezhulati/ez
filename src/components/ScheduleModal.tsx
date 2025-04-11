@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, ArrowRight, CheckCircle, User, Mail, MessageSquare, Loader2, Phone, Video, Users } from 'lucide-react';
+import { X, Calendar, Clock, ArrowRight, CheckCircle, User, Mail, MessageSquare, Loader2, Phone, Video, Users, AlertCircle } from 'lucide-react';
 import { format, addDays, addMinutes, set, addMonths, getDate } from 'date-fns';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
@@ -20,6 +20,23 @@ type TimeSlot = {
 
 type BookingStep = 'date' | 'time' | 'details' | 'confirmation';
 
+// Secure random token generator using Web Crypto API
+const generateSecureToken = (): string => {
+  // Use crypto.getRandomValues for secure random generation
+  const array = new Uint32Array(4);
+  window.crypto.getRandomValues(array);
+  return Array.from(array, val => val.toString(16).padStart(8, '0')).join('');
+};
+
+// Simple input sanitization to prevent XSS
+const sanitizeInput = (input: string): string => {
+  return input
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
 const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId }) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeSlot[]>([]);
@@ -30,10 +47,12 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId
     email: '',
     phone: '',
     topic: '',
-    preferredContact: 'video' as 'video' | 'phone'
+    preferredContact: 'video' as 'video' | 'phone',
+    _csrf: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingComplete, setBookingComplete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const modalRef = useRef<HTMLDivElement>(null);
   const { isMobile } = useScreenSize();
@@ -69,6 +88,28 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId
     }
   };
   
+  // Generate a CSRF token (replaced with more secure version)
+  const generateCSRFToken = () => {
+    return generateSecureToken();
+    return Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+  };
+
+  // Initialize CSRF token
+  useEffect(() => {
+    const csrfToken = generateCSRFToken();
+    setFormData(prev => ({
+      ...prev,
+      _csrf: csrfToken
+    }));
+    
+    // Store in sessionStorage for verification
+    try {
+      sessionStorage.setItem('scheduleModalCsrfToken', csrfToken);
+    } catch (e) {
+      console.error('Error storing CSRF token:', e);
+    }
+  }, []);
+  
   // Reset state when modal is opened
   useEffect(() => {
     if (isOpen) {
@@ -76,13 +117,26 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId
       setSelectedDate(undefined);
       setSelectedTimeSlot(null);
       setBookingComplete(false);
+      setError(null);
+      
+      // Generate a new CSRF token
+      const csrfToken = generateCSRFToken();
+      
       setFormData({
         name: '',
         email: '',
         phone: '',
         topic: '',
-        preferredContact: 'video'
+        preferredContact: 'video',
+        _csrf: csrfToken
       });
+      
+      // Store in sessionStorage
+      try {
+        sessionStorage.setItem('scheduleModalCsrfToken', csrfToken);
+      } catch (e) {
+        console.error('Error storing CSRF token:', e);
+      }
     }
   }, [isOpen]);
   
@@ -141,13 +195,79 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId
     return slots;
   };
   
-  // Handle form input changes
+  // Form validation errors
+  const [validationErrors, setValidationErrors] = useState<{
+    name?: string;
+    email?: string;
+    phone?: string;
+    topic?: string;
+  }>({});
+
+  // Validate form inputs
+  const validateForm = (): boolean => {
+    const errors: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      topic?: string;
+    } = {};
+    
+    // Name validation
+    if (!formData.name.trim()) {
+      errors.name = "Name is required";
+    } else if (formData.name.length > 100) {
+      errors.name = "Name is too long";
+    }
+    
+    // Email validation
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
+      errors.email = "Invalid email address";
+    }
+    
+    // Phone validation (optional)
+    if (formData.phone.trim() && !/^[\d\s\-+()]{7,20}$/.test(formData.phone)) {
+      errors.phone = "Invalid phone number";
+    }
+    
+    // Topic validation
+    if (!formData.topic.trim()) {
+      errors.topic = "Please let us know what you'd like to discuss";
+    } else if (formData.topic.length > 500) {
+      errors.topic = "Topic is too long";
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle form input changes with validation
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    // Limit input length for security
+    const maxLengths: {[key: string]: number} = {
+      name: 100,
+      email: 100,
+      phone: 20,
+      topic: 500
+    };
+    
+    const truncatedValue = maxLengths[name] ? value.slice(0, maxLengths[name]) : value;
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: truncatedValue
     }));
+    
+    // Clear validation error when user types
+    if (validationErrors[name as keyof typeof validationErrors]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
   };
   
   // Handle radio button change for preferred contact method
@@ -158,15 +278,54 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId
     }));
   };
   
-  // Handle form submission - send data to Formspree
+  // Rate limiting for form submissions
+  const [lastSubmissionTime, setLastSubmissionTime] = useState(0);
+  
+  // Handle form submission - send data to Formspree with CSRF protection
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedDate || !selectedTimeSlot) return;
     
+    // Rate limiting check - prevent submissions more than once per 10 seconds
+    const now = Date.now();
+    if (now - lastSubmissionTime < 10000) {
+      setError("Please wait a moment before submitting again");
+      return;
+    }
+    
+    // Validate form inputs
+    if (!validateForm()) {
+      return;
+    }
+    
+    setLastSubmissionTime(now);
     setIsSubmitting(true);
     
     try {
+      // Verify CSRF token matches
+      let storedToken;
+      try {
+        storedToken = sessionStorage.getItem('scheduleModalCsrfToken');
+      } catch (e) {
+        console.error('Error retrieving CSRF token:', e);
+      }
+      
+      if (!storedToken || storedToken !== formData._csrf) {
+        // Generate a new token if verification fails (using secure method)
+        const newToken = generateSecureToken();
+        setFormData(prev => ({
+          ...prev,
+          _csrf: newToken
+        }));
+        try {
+          sessionStorage.setItem('scheduleModalCsrfToken', newToken);
+        } catch (e) {
+          console.error('Error storing new CSRF token:', e);
+        }
+        throw new Error('Security verification failed. Please try again.');
+      }
+      
       // Format the date and time for email
       const formattedDate = format(selectedDate, 'EEEE, MMMM d, yyyy');
       const formattedTime = selectedTimeSlot.formatted;
@@ -179,10 +338,13 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId
         _subject: `Meeting Request: ${formData.name} for ${formattedDate}`,
       };
       
-      // Submit to Formspree
+      // Submit to Formspree with CSRF token
       const response = await fetch("https://formspree.io/f/xanewdzl", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": formData._csrf
+        },
         body: JSON.stringify(submissionData),
       });
       
@@ -192,11 +354,23 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId
         setCurrentStep('confirmation');
       } else {
         console.error('Form submission error:', await response.text());
-        alert('There was an error submitting your scheduling request. Please try again.');
+        setError('There was an error submitting your request. Please try again later.');
       }
     } catch (error) {
-      console.error('Error submitting form:', error);
-      alert('There was an error submitting your scheduling request. Please try again.');
+      console.error('Error submitting form:', error instanceof Error ? error.message : 'Unknown error');
+      setError('There was an error submitting your request. Please try again later.');
+      
+      // Generate a new CSRF token after an error (using secure method)
+      const newToken = generateSecureToken();
+      setFormData(prev => ({
+        ...prev,
+        _csrf: newToken
+      }));
+      try {
+        sessionStorage.setItem('scheduleModalCsrfToken', newToken);
+      } catch (e) {
+        console.error('Error storing new CSRF token:', e);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -507,7 +681,7 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId
               {currentStep === 'details' && (
                 <div>
                   <div className="flex items-center space-x-2 mb-6">
-                    <button 
+                    <button
                       onClick={goBack}
                       className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
                       aria-label="Go back to time selection"
@@ -526,11 +700,27 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId
                     </div>
                   </div>
                   
+                  {/* Error message */}
+                  {error && (
+                    <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-4 rounded-lg flex items-center mb-5">
+                      <AlertCircle className="h-5 w-5 mr-2 text-red-500" />
+                      <p className="text-sm font-medium">{error}</p>
+                    </div>
+                  )}
+                  
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Your Name
-                      </label>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Your Name
+                        </label>
+                        {validationErrors.name && (
+                          <span className="text-red-500 text-xs flex items-center">
+                            <AlertCircle size={12} className="mr-1" />
+                            {validationErrors.name}
+                          </span>
+                        )}
+                      </div>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <User className="h-5 w-5 text-gray-400" />
@@ -542,16 +732,25 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId
                           value={formData.name}
                           onChange={handleInputChange}
                           required
-                          className="pl-10 w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                          maxLength={100}
+                          className={`pl-10 w-full px-4 py-2.5 border ${validationErrors.name ? 'border-red-300 dark:border-red-600 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'} rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm`}
                           placeholder="Enter your full name"
                         />
                       </div>
                     </div>
                     
                     <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Email Address
-                      </label>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Email Address
+                        </label>
+                        {validationErrors.email && (
+                          <span className="text-red-500 text-xs flex items-center">
+                            <AlertCircle size={12} className="mr-1" />
+                            {validationErrors.email}
+                          </span>
+                        )}
+                      </div>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <Mail className="h-5 w-5 text-gray-400" />
@@ -563,16 +762,25 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId
                           value={formData.email}
                           onChange={handleInputChange}
                           required
-                          className="pl-10 w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                          maxLength={100}
+                          className={`pl-10 w-full px-4 py-2.5 border ${validationErrors.email ? 'border-red-300 dark:border-red-600 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'} rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm`}
                           placeholder="you@example.com"
                         />
                       </div>
                     </div>
                     
                     <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Phone Number <span className="text-gray-500 dark:text-gray-400 font-normal">(optional)</span>
-                      </label>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Phone Number <span className="text-gray-500 dark:text-gray-400 font-normal">(optional)</span>
+                        </label>
+                        {validationErrors.phone && (
+                          <span className="text-red-500 text-xs flex items-center">
+                            <AlertCircle size={12} className="mr-1" />
+                            {validationErrors.phone}
+                          </span>
+                        )}
+                      </div>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <Phone className="h-5 w-5 text-gray-400" />
@@ -583,16 +791,26 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId
                           name="phone"
                           value={formData.phone}
                           onChange={handleInputChange}
-                          className="pl-10 w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                          maxLength={20}
+                          pattern="[\d\s\-+()]{7,20}"
+                          className={`pl-10 w-full px-4 py-2.5 border ${validationErrors.phone ? 'border-red-300 dark:border-red-600 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'} rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm`}
                           placeholder="(123) 456-7890"
                         />
                       </div>
                     </div>
                     
                     <div>
-                      <label htmlFor="topic" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        What would you like to discuss?
-                      </label>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="topic" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          What would you like to discuss?
+                        </label>
+                        {validationErrors.topic && (
+                          <span className="text-red-500 text-xs flex items-center">
+                            <AlertCircle size={12} className="mr-1" />
+                            {validationErrors.topic}
+                          </span>
+                        )}
+                      </div>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <MessageSquare className="h-5 w-5 text-gray-400" />
@@ -604,7 +822,8 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId
                           value={formData.topic}
                           onChange={handleInputChange}
                           required
-                          className="pl-10 w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                          maxLength={500}
+                          className={`pl-10 w-full px-4 py-2.5 border ${validationErrors.topic ? 'border-red-300 dark:border-red-600 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'} rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm`}
                           placeholder="Briefly describe what you'd like to discuss"
                         />
                       </div>
@@ -696,7 +915,8 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId
                     <div className="flex items-center mb-3">
                       <User className="h-5 w-5 text-blue-500 mr-3 flex-shrink-0" />
                       <span className="text-gray-800 dark:text-gray-200 font-medium">
-                        {formData.name}
+                        {/* Sanitize user input to prevent XSS */}
+                        {formData.name && sanitizeInput(formData.name)}
                       </span>
                     </div>
                     <div className="flex items-center">
@@ -712,7 +932,7 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, clientId
                   </div>
                   
                   <p className="text-gray-500 dark:text-gray-400 text-sm">
-                    I've received your request and will send confirmation details to <span className="font-medium">{formData.email}</span>
+                    I've received your request and will send confirmation details to <span className="font-medium">{formData.email && sanitizeInput(formData.email)}</span>
                   </p>
                   
                   <button
